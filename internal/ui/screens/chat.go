@@ -63,6 +63,7 @@ func (m *ChatModel) SetChat(chat *store.Chat) {
 	}
 }
 func (m *ChatModel) SetMessages(msgs []store.Message)                  { m.msgList.SetMessages(msgs) }
+func (m *ChatModel) RemoveMessage(id int)                              { m.msgList.RemoveMessage(id) }
 func (m *ChatModel) PrependMessages(older []store.Message)             { m.msgList.PrependMessages(older) }
 func (m *ChatModel) SetImage(photoID int64, img image.Image)           { m.msgList.SetImage(photoID, img) }
 func (m *ChatModel) SetKnownImages(cache map[int64]image.Image)        { m.msgList.SetKnownImages(cache) }

@@ -174,7 +174,9 @@ func TestContextMenu_DeleteOutgoing_ShowsSubPrompt(t *testing.T) {
 
 func TestContextMenu_DeleteSub_ForMe_EmitsDelete(t *testing.T) {
 	cm := navigateToDeleteSubPrompt(t)
-	// cursor on "For me" (index 0)
+	// cursor on "For everyone" (index 0); navigate to "For me" (index 1)
+	cm, _ = cm.Update(pressJ())
+	require.NotNil(t, cm)
 	newCM, cmd := cm.Update(pressEnter())
 	assert.Nil(t, newCM)
 	require.NotNil(t, cmd)
@@ -186,8 +188,7 @@ func TestContextMenu_DeleteSub_ForMe_EmitsDelete(t *testing.T) {
 
 func TestContextMenu_DeleteSub_ForEveryone_EmitsDeleteRevoke(t *testing.T) {
 	cm := navigateToDeleteSubPrompt(t)
-	cm, _ = cm.Update(pressJ()) // For everyone
-	require.NotNil(t, cm)
+	// cursor starts on "For everyone" (index 0)
 	newCM, cmd := cm.Update(pressEnter())
 	assert.Nil(t, newCM)
 	require.NotNil(t, cmd)
@@ -199,7 +200,7 @@ func TestContextMenu_DeleteSub_ForEveryone_EmitsDeleteRevoke(t *testing.T) {
 func TestContextMenu_DeleteSub_Cancel_Closes(t *testing.T) {
 	cm := navigateToDeleteSubPrompt(t)
 	// Navigate to Cancel (index 3), skipping separator (index 2)
-	cm, _ = cm.Update(pressJ()) // For everyone
+	cm, _ = cm.Update(pressJ()) // For me
 	require.NotNil(t, cm)
 	cm, _ = cm.Update(pressJ()) // should skip separator, land on Cancel
 	require.NotNil(t, cm)
@@ -212,7 +213,7 @@ func TestContextMenu_DeleteSub_Cancel_Closes(t *testing.T) {
 
 func TestContextMenu_DeleteSub_SeparatorSkipped_Down(t *testing.T) {
 	cm := navigateToDeleteSubPrompt(t)
-	cm, _ = cm.Update(pressJ()) // For everyone (index 1)
+	cm, _ = cm.Update(pressJ()) // For me (index 1)
 	require.NotNil(t, cm)
 	cm, _ = cm.Update(pressJ()) // should skip sep(2), land on Cancel(3)
 	require.NotNil(t, cm)
@@ -221,13 +222,13 @@ func TestContextMenu_DeleteSub_SeparatorSkipped_Down(t *testing.T) {
 
 func TestContextMenu_DeleteSub_SeparatorSkipped_Up(t *testing.T) {
 	cm := navigateToDeleteSubPrompt(t)
-	cm, _ = cm.Update(pressJ()) // For everyone
+	cm, _ = cm.Update(pressJ()) // For me
 	require.NotNil(t, cm)
 	cm, _ = cm.Update(pressJ()) // Cancel (skipping sep)
 	require.NotNil(t, cm)
-	cm, _ = cm.Update(pressK()) // should skip sep going up, land on For everyone
+	cm, _ = cm.Update(pressK()) // should skip sep going up, land on For me
 	require.NotNil(t, cm)
-	assert.Contains(t, cm.View(), "▸ For everyone")
+	assert.Contains(t, cm.View(), "▸ For me")
 }
 
 func TestContextMenu_EscFromSubPrompt_ReturnsToMain(t *testing.T) {

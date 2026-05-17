@@ -338,7 +338,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.st.RemoveMessage(m.currentChatID, msg.MsgID)
-		m.chat.SetMessages(m.st.Messages(m.currentChatID))
+		m.chat.RemoveMessage(msg.MsgID)
 		if m.tgClient == nil {
 			return m, nil
 		}

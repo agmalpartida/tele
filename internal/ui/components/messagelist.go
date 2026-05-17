@@ -110,6 +110,35 @@ func (ml *MessageList) SetMessages(msgs []store.Message) {
 	ml.viewStart, ml.lineOffset = ml.positionAtBottom()
 }
 
+// RemoveMessage removes the message with the given ID while preserving scroll position.
+func (ml *MessageList) RemoveMessage(id int) {
+	idx := -1
+	for i, msg := range ml.messages {
+		if msg.ID == id {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return
+	}
+	ml.messages = append(ml.messages[:idx], ml.messages[idx+1:]...)
+	if len(ml.messages) == 0 {
+		ml.viewStart = 0
+		ml.lineOffset = 0
+		return
+	}
+	switch {
+	case idx < ml.viewStart:
+		ml.viewStart--
+	case idx == ml.viewStart:
+		ml.lineOffset = 0
+		if ml.viewStart >= len(ml.messages) {
+			ml.viewStart = len(ml.messages) - 1
+		}
+	}
+}
+
 func (ml *MessageList) Count() int        { return len(ml.messages) }
 func (ml *MessageList) ViewStart() int    { return ml.viewStart }
 func (ml *MessageList) LineOffset() int   { return ml.lineOffset }
