@@ -427,6 +427,30 @@ func TestMessageList_View_ReplySnippetTruncated(t *testing.T) {
 	assert.Contains(t, view, "…")
 }
 
+func TestMessageList_GroupChat_LongSenderName_NoBubbleOverflow(t *testing.T) {
+	ml := components.NewMessageList(20, 40)
+	ml.SetIsGroup(true)
+	msg := store.Message{
+		ID:         1,
+		ChatID:     1,
+		SenderName: "VeryLongSenderNameThatExceedsText",
+		Text:       "ok",
+		Date:       time.Now(),
+	}
+	ml.SetMessages([]store.Message{msg})
+	view := stripANSI(ml.View())
+	// The top border must contain the sender name and end with the corner glyph.
+	var topLine string
+	for _, l := range strings.Split(view, "\n") {
+		if strings.Contains(l, "VeryLongSenderNameThatExceedsText") {
+			topLine = l
+			break
+		}
+	}
+	require.NotEmpty(t, topLine, "sender name not found in view")
+	assert.True(t, strings.HasSuffix(strings.TrimRight(topLine, " "), "╮"), "top border must end with ╮, got: %q", topLine)
+}
+
 func TestMessageList_ScrollToMessage_Found(t *testing.T) {
 	// viewHeight=6: 2 msgs of h=3 fit. Scrolling to msg2 (index 1) leaves
 	// 4 msgs below (12 lines > 6), so positionAtBottom is NOT triggered.

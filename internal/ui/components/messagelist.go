@@ -513,6 +513,20 @@ func (ml *MessageList) renderMessage(msg store.Message, selected bool) []string 
 		actualW = innerW - 2
 	}
 
+	// Ensure bubble is wide enough for the sender name in the top border.
+	// rightFill = innerW - titleW - 1 must be >= 0, so innerW >= titleW + 1.
+	if !msg.IsOut && ml.isGroup {
+		name := msg.SenderName
+		if name == "" {
+			name = "?"
+		}
+		titleW := lipgloss.Width(" " + inNameStyle.Render(name) + " ")
+		if innerW < titleW+1 {
+			innerW = titleW + 1
+			actualW = innerW - 2
+		}
+	}
+
 	// Top border: sender/indicator left-aligned for incoming; plain for outgoing.
 	var top string
 	if !msg.IsOut {
