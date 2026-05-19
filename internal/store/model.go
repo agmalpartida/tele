@@ -56,6 +56,7 @@ type Message struct {
 	Entities     []MessageEntity
 	Photo        *PhotoRef // nil if message has no photo
 	ReplyToMsgID int       // 0 if not a reply
+	EditDate     *time.Time // nil if not edited
 }
 
 type EventKind int

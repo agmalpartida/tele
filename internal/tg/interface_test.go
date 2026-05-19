@@ -44,6 +44,10 @@ func (m *mockClient) DeleteMessages(_ context.Context, _ store.Peer, _ []int, _ 
 	return nil
 }
 
+func (m *mockClient) EditMessage(_ context.Context, _ store.Peer, _ int, _ string) error {
+	return nil
+}
+
 func (m *mockClient) Updates() <-chan store.Event {
 	return m.events
 }

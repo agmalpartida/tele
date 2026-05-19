@@ -26,6 +26,7 @@ func pressDown() tea.KeyPressMsg  { return tea.KeyPressMsg{Code: tea.KeyDown} }
 func pressUp() tea.KeyPressMsg    { return tea.KeyPressMsg{Code: tea.KeyUp} }
 func pressEnter() tea.KeyPressMsg { return tea.KeyPressMsg{Code: tea.KeyEnter} }
 func pressEsc() tea.KeyPressMsg   { return tea.KeyPressMsg{Code: tea.KeyEsc} }
+func pressE() tea.KeyPressMsg     { return keyMsg('e') }
 func pressSpace() tea.KeyPressMsg { return keyMsg(' ') }
 
 // --- item display ---
@@ -152,7 +153,7 @@ func TestContextMenu_ReactStub_Closes(t *testing.T) {
 	assert.IsType(t, components.CloseContextMenuMsg{}, cmd())
 }
 
-func TestContextMenu_EditStub_Closes(t *testing.T) {
+func TestContextMenu_Edit_EmitsEditMsgRequest(t *testing.T) {
 	cm := components.NewContextMenu(42, true, 0, defaultKM())
 	cm, _ = cm.Update(pressJ()) // React
 	require.NotNil(t, cm)
@@ -161,7 +162,19 @@ func TestContextMenu_EditStub_Closes(t *testing.T) {
 	newCM, cmd := cm.Update(pressEnter())
 	assert.Nil(t, newCM)
 	require.NotNil(t, cmd)
-	assert.IsType(t, components.CloseContextMenuMsg{}, cmd())
+	req, ok := cmd().(components.EditMsgRequest)
+	require.True(t, ok)
+	assert.Equal(t, 42, req.MsgID)
+}
+
+func TestContextMenu_DirectKey_E_EmitsEditMsgRequest(t *testing.T) {
+	cm := components.NewContextMenu(42, true, 0, defaultKM())
+	newCM, cmd := cm.Update(pressE())
+	assert.Nil(t, newCM)
+	require.NotNil(t, cmd)
+	req, ok := cmd().(components.EditMsgRequest)
+	require.True(t, ok)
+	assert.Equal(t, 42, req.MsgID)
 }
 
 // --- direct key dispatch ---

@@ -28,6 +28,11 @@ type ReplyMsgRequest struct {
 	MsgID int
 }
 
+// EditMsgRequest is emitted when the user activates edit for a message.
+type EditMsgRequest struct {
+	MsgID int
+}
+
 type menuState int
 
 const (
@@ -179,7 +184,10 @@ func (cm *ContextMenu) execute() (*ContextMenu, tea.Cmd) {
 	case keys.ActionReply:
 		msgID := cm.msgID
 		return nil, func() tea.Msg { return ReplyMsgRequest{MsgID: msgID} }
-	case keys.ActionReact, keys.ActionEdit, keys.ActionCancel:
+	case keys.ActionEdit:
+		msgID := cm.msgID
+		return nil, func() tea.Msg { return EditMsgRequest{MsgID: msgID} }
+	case keys.ActionReact, keys.ActionCancel:
 		return nil, func() tea.Msg { return CloseContextMenuMsg{} }
 	case keys.ActionDelete:
 		if !cm.isOut {

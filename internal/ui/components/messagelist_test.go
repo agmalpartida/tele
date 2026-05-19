@@ -574,3 +574,21 @@ func TestMessageList_View_ReplySnippetFirstLineOnly(t *testing.T) {
 	assert.Contains(t, view, "line1")
 	assert.NotContains(t, view, "line2")
 }
+
+func TestMessageList_EditedMessage_ShowsEditedLabel(t *testing.T) {
+	ml := components.NewMessageList(20, 80)
+	now := time.Now()
+	ml.SetMessages([]store.Message{
+		{ID: 1, ChatID: 1, Text: "hello", Date: now, IsOut: true, EditDate: &now},
+	})
+	assert.Contains(t, ml.View(), "edited")
+}
+
+func TestMessageList_NotEdited_NoEditedLabel(t *testing.T) {
+	ml := components.NewMessageList(20, 80)
+	now := time.Now()
+	ml.SetMessages([]store.Message{
+		{ID: 1, ChatID: 1, Text: "normal", Date: now, IsOut: true},
+	})
+	assert.NotContains(t, ml.View(), "edited")
+}

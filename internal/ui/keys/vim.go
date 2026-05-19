@@ -96,6 +96,8 @@ func (vs *VimState) Process(key string) Action {
 		return ActionOpenContextMenu
 	case "r":
 		return ActionReply
+	case "e":
+		return ActionEdit
 	}
 	return ActionNone
 }

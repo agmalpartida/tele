@@ -16,6 +16,12 @@ type SendMsgRequest struct {
 	ReplyToMsgID int
 }
 
+type EditSendRequest struct {
+	Peer  store.Peer
+	MsgID int
+	Text  string
+}
+
 type OpenPhotoMsg struct {
 	PhotoID int64
 }
@@ -35,6 +41,7 @@ type ChatModel struct {
 	focused         bool
 	composerFocused bool
 	replyToMsgID    int
+	editMsgID       int
 }
 
 func NewChatModel(width, height int) *ChatModel {
@@ -78,16 +85,30 @@ func (m *ChatModel) SelectedMessageID() int           { return m.msgList.Selecte
 func (m *ChatModel) SelectedMessageIsOut() bool        { return m.msgList.SelectedMessageIsOut() }
 func (m *ChatModel) SelectedMessageReplyToMsgID() int  { return m.msgList.SelectedMessageReplyToMsgID() }
 func (m *ChatModel) ScrollToMessage(id int) bool       { return m.msgList.ScrollToMessage(id) }
-func (m *ChatModel) ReplyToMsgID() int                 { return m.replyToMsgID }
+func (m *ChatModel) ReplyToMsgID() int { return m.replyToMsgID }
+func (m *ChatModel) EditMsgID() int    { return m.editMsgID }
 
 func (m *ChatModel) clearPendingAction() {
+	if m.editMsgID != 0 {
+		m.composer.Reset()
+	} else {
+		m.composer.ClearReplyPreview()
+	}
 	m.replyToMsgID = 0
-	m.composer.ClearReplyPreview()
+	m.editMsgID = 0
 }
 
 // ClearPendingAction clears any active reply (or future forward) state.
 func (m *ChatModel) ClearPendingAction() {
 	m.clearPendingAction()
+	m.syncMsgListHeight()
+}
+
+// SetEdit activates edit mode. Clears any existing pending action first.
+func (m *ChatModel) SetEdit(msgID int, preview string) {
+	m.clearPendingAction()
+	m.editMsgID = msgID
+	m.composer.SetReplyPreview(preview)
 	m.syncMsgListHeight()
 }
 
@@ -211,11 +232,17 @@ func (m *ChatModel) Update(msg tea.Msg) (layout.Pane, tea.Cmd) {
 			if msg.Code == tea.KeyEnter && msg.Mod == 0 {
 				text := m.composer.Value()
 				replyID := m.replyToMsgID
+				editID := m.editMsgID
 				m.clearPendingAction()
 				m.composer.Reset()
 				m.syncMsgListHeight()
 				if m.chat != nil && text != "" {
 					peer := m.chat.Peer
+					if editID != 0 {
+						return m, func() tea.Msg {
+							return EditSendRequest{Peer: peer, MsgID: editID, Text: text}
+						}
+					}
 					return m, func() tea.Msg {
 						return SendMsgRequest{Peer: peer, Text: text, ReplyToMsgID: replyID}
 					}

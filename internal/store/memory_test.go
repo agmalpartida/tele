@@ -96,6 +96,27 @@ func TestMemory_UpdateMessageID_NoopWhenMissing(t *testing.T) {
 	assert.Equal(t, 1, msgs[0].ID)
 }
 
+func TestMemory_UpdateMessageText(t *testing.T) {
+	s := store.NewMemory()
+	now := time.Now()
+	s.AppendMessage(store.Message{ID: 1, ChatID: 5, Text: "original"})
+	s.UpdateMessageText(5, 1, "edited", now)
+	msgs := s.Messages(5)
+	require.Len(t, msgs, 1)
+	assert.Equal(t, "edited", msgs[0].Text)
+	require.NotNil(t, msgs[0].EditDate)
+}
+
+func TestMemory_UpdateMessageText_NoopWhenMissing(t *testing.T) {
+	s := store.NewMemory()
+	s.AppendMessage(store.Message{ID: 1, ChatID: 5, Text: "msg"})
+	assert.NotPanics(t, func() {
+		s.UpdateMessageText(5, 999, "x", time.Now())
+	})
+	msgs := s.Messages(5)
+	assert.Equal(t, "msg", msgs[0].Text)
+}
+
 func TestMemory_RemoveMessage(t *testing.T) {
 	s := store.NewMemory()
 	s.AppendMessage(store.Message{ID: -1, ChatID: 5, Text: "sentinel"})

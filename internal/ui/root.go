@@ -322,6 +322,22 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return sentMsgConfirmedMsg{chatID: chatID, sentinelID: sentinelID, realID: realID}
 		}
 
+	case screens.EditSendRequest:
+		if m.st == nil || m.tgClient == nil {
+			return m, nil
+		}
+		chatID := m.currentChatID
+		m.st.UpdateMessageText(chatID, msg.MsgID, msg.Text, time.Now())
+		m.chat.SetMessages(m.st.Messages(chatID))
+		client := m.tgClient
+		peer := msg.Peer
+		msgID := msg.MsgID
+		text := msg.Text
+		return m, func() tea.Msg {
+			_ = client.EditMessage(context.Background(), peer, msgID, text)
+			return nil
+		}
+
 	case sentMsgConfirmedMsg:
 		if m.st == nil {
 			return m, nil
@@ -346,6 +362,10 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case components.ReplyMsgRequest:
 		m.contextMenu = nil
 		return m, m.activateReply(msg.MsgID)
+
+	case components.EditMsgRequest:
+		m.contextMenu = nil
+		return m, m.activateEdit(msg.MsgID)
 
 	case components.CloseContextMenuMsg:
 		m.contextMenu = nil
@@ -493,6 +513,13 @@ func (m RootModel) handleMainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	if action == keys.ActionEdit && m.focus == FocusChat {
+		if m.chat != nil && m.chat.SelectedMessageIsOut() {
+			return m, m.activateEdit(m.chat.SelectedMessageID())
+		}
+		return m, nil
+	}
+
 	if action == keys.ActionPassthrough {
 		newPane, cmd := m.chat.Update(msg)
 		m.chat = newPane.(*screens.ChatModel)
@@ -595,6 +622,29 @@ func (m *RootModel) activateReply(msgID int) tea.Cmd {
 	m.vimState.Mode = keys.ModeInsert
 	m.statusBar.SetMode(keys.ModeInsert)
 	return m.chat.FocusComposer()
+}
+
+// activateEdit sets edit state for msgID, pre-fills the composer with the
+// original text, switches to insert mode, and returns the FocusComposer cmd.
+// Returns nil if msgID is zero or the message is not found in the store.
+func (m *RootModel) activateEdit(msgID int) tea.Cmd {
+	if msgID == 0 {
+		return nil
+	}
+	if m.st == nil {
+		return nil
+	}
+	for _, storeMsg := range m.st.Messages(m.currentChatID) {
+		if storeMsg.ID == msgID {
+			preview := components.BuildEditPreview(storeMsg)
+			m.chat.SetEdit(msgID, preview)
+			m.chat.SetComposerValue(storeMsg.Text)
+			m.vimState.Mode = keys.ModeInsert
+			m.statusBar.SetMode(keys.ModeInsert)
+			return m.chat.FocusComposer()
+		}
+	}
+	return nil
 }
 
 func (m RootModel) focusPane(target Focus) (tea.Model, tea.Cmd) {

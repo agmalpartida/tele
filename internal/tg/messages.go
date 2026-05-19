@@ -137,6 +137,27 @@ func (c *GotdClient) DeleteMessages(ctx context.Context, peer store.Peer, ids []
 	})
 }
 
+func (c *GotdClient) EditMessage(ctx context.Context, peer store.Peer, msgID int, text string) error {
+	c.mu.RLock()
+	api := c.api
+	c.mu.RUnlock()
+	if api == nil {
+		return fmt.Errorf("not connected")
+	}
+	c.log.Debug("EditMessage", zap.Int64("peer_id", peer.ID), zap.Int("msg_id", msgID))
+	return WithRetry(ctx, func() error {
+		_, err := api.MessagesEditMessage(ctx, &tg.MessagesEditMessageRequest{
+			Peer:    peerToInput(peer),
+			ID:      msgID,
+			Message: text,
+		})
+		if err != nil {
+			c.log.Error("MessagesEditMessage failed", zap.Int64("peer_id", peer.ID), zap.Error(err))
+		}
+		return err
+	})
+}
+
 func peerToInput(p store.Peer) tg.InputPeerClass {
 	switch p.Type {
 	case store.PeerUser:
@@ -238,6 +259,10 @@ func convertMessage(raw tg.MessageClass, chatID int64) (store.Message, bool) {
 	}
 	if hdr, ok := msg.ReplyTo.(*tg.MessageReplyHeader); ok {
 		out.ReplyToMsgID = hdr.ReplyToMsgID
+	}
+	if msg.EditDate != 0 {
+		t := time.Unix(int64(msg.EditDate), 0)
+		out.EditDate = &t
 	}
 	if media, ok := msg.Media.(*tg.MessageMediaPhoto); ok {
 		if photo, ok := media.Photo.(*tg.Photo); ok && len(photo.Sizes) > 0 {

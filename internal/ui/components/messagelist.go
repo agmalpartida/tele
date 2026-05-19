@@ -12,6 +12,7 @@ import (
 
 var (
 	inNameStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Bold(true)
+	editNameStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("11")).Bold(true)
 	tsStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	sentStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	readStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
@@ -506,7 +507,11 @@ func (ml *MessageList) renderMessage(msg store.Message, selected bool) []string 
 			statusStr = " " + sentStyle.Render("✓")
 		}
 	}
-	tsStr := " " + tsStyle.Render(msg.Date.Format("15:04")) + statusStr + " "
+	editMark := ""
+	if msg.EditDate != nil {
+		editMark = tsStyle.Render("edited") + " · "
+	}
+	tsStr := " " + editMark + tsStyle.Render(msg.Date.Format("15:04")) + statusStr + " "
 	tsW := lipgloss.Width(tsStr)
 	if innerW < tsW {
 		innerW = tsW

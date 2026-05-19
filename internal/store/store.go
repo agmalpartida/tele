@@ -1,5 +1,7 @@
 package store
 
+import "time"
+
 type Store interface {
 	GetChat(id int64) (Chat, bool)
 	SetChat(chat Chat)
@@ -8,6 +10,7 @@ type Store interface {
 	SetMessages(chatID int64, msgs []Message)
 	AppendMessage(msg Message)
 	UpdateMessageID(chatID int64, oldID, newID int)
+	UpdateMessageText(chatID int64, msgID int, text string, editDate time.Time)
 	RemoveMessage(chatID int64, msgID int)
 	UpdateChatReadMaxID(chatID int64, maxID int)
 	UpdateChatOutboxReadMaxID(chatID int64, maxID int)

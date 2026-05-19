@@ -98,6 +98,19 @@ func (s *memoryStore) UpdateMessageID(chatID int64, oldID, newID int) {
 	}
 }
 
+func (s *memoryStore) UpdateMessageText(chatID int64, msgID int, text string, editDate time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.messages[chatID] {
+		if s.messages[chatID][i].ID == msgID {
+			s.messages[chatID][i].Text = text
+			t := editDate
+			s.messages[chatID][i].EditDate = &t
+			return
+		}
+	}
+}
+
 func (s *memoryStore) RemoveMessage(chatID int64, msgID int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

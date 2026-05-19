@@ -51,3 +51,34 @@ func TestBuildReplyPreview_MultilineTextUsesFirstLine(t *testing.T) {
 	assert.Contains(t, preview, "first line")
 	assert.NotContains(t, preview, "second line")
 }
+
+func TestBuildEditPreview_ContainsLabel(t *testing.T) {
+	msg := store.Message{Text: "hello"}
+	got := components.BuildEditPreview(msg)
+	assert.Contains(t, got, "Edit Message")
+}
+
+func TestBuildEditPreview_ContainsSnippet(t *testing.T) {
+	msg := store.Message{Text: "hello world"}
+	got := components.BuildEditPreview(msg)
+	assert.Contains(t, got, "hello world")
+}
+
+func TestBuildEditPreview_TwoLines(t *testing.T) {
+	msg := store.Message{Text: "hello"}
+	got := components.BuildEditPreview(msg)
+	assert.Equal(t, 1, strings.Count(got, "\n"), "preview must be exactly two lines")
+}
+
+func TestBuildEditPreview_LongTextTruncated(t *testing.T) {
+	msg := store.Message{Text: strings.Repeat("x", 50)}
+	got := components.BuildEditPreview(msg)
+	assert.Contains(t, got, "…")
+}
+
+func TestBuildEditPreview_MultilineUsesFirstLine(t *testing.T) {
+	msg := store.Message{Text: "first\nsecond"}
+	got := components.BuildEditPreview(msg)
+	assert.Contains(t, got, "first")
+	assert.NotContains(t, got, "second")
+}
