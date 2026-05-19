@@ -270,13 +270,12 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Kind {
 		case store.EventNewMessage:
 			m.st.AppendMessage(msg.Message)
+			m.chatList.SetChats(m.st.Chats())
 			if msg.Message.ChatID == m.currentChatID {
 				m.chat.SetMessages(m.st.Messages(m.currentChatID))
+				return m, m.markReadCmd()
 			}
-			m.chatList.SetChats(m.st.Chats())
-			if msg.Message.ChatID != m.currentChatID {
-				m.chatList.IncrementUnread(msg.Message.ChatID)
-			}
+			m.chatList.IncrementUnread(msg.Message.ChatID)
 		case store.EventReadInbox:
 			m.st.UpdateChatReadMaxID(msg.ChatID, msg.ReadMaxID)
 			if chat, ok := m.st.GetChat(msg.ChatID); ok {
