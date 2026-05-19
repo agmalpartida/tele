@@ -25,6 +25,10 @@ func (m *mockClient) GetDialogs(_ context.Context) ([]store.Chat, error) {
 	return m.dialogs, nil
 }
 
+func (m *mockClient) GetDialogFilters(_ context.Context) ([]store.FolderFilter, error) {
+	return nil, nil
+}
+
 func (m *mockClient) GetHistory(_ context.Context, _ store.Peer, _ int, _ int) ([]store.Message, error) {
 	return m.history, nil
 }

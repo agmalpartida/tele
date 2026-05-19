@@ -11,6 +11,7 @@ import (
 // All callers (ui, app) depend on this interface, not on gotd directly.
 type Client interface {
 	GetDialogs(ctx context.Context) ([]store.Chat, error)
+	GetDialogFilters(ctx context.Context) ([]store.FolderFilter, error)
 	GetHistory(ctx context.Context, peer store.Peer, offsetID int, limit int) ([]store.Message, error)
 	SendMessage(ctx context.Context, peer store.Peer, text string, replyToMsgID int) (int, error)
 	MarkRead(ctx context.Context, peer store.Peer, maxID int) error

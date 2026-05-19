@@ -57,6 +57,16 @@ func (sb *StatusBar) hints() string {
 		return ""
 	}
 	switch {
+	case sb.activePane == "folders":
+		down := sb.keyMap.KeyFor(keys.ContextFolders, keys.ActionDown)
+		up := sb.keyMap.KeyFor(keys.ContextFolders, keys.ActionUp)
+		sel := sb.keyMap.KeyFor(keys.ContextFolders, keys.ActionConfirm)
+		quit := sb.keyMap.KeyFor(keys.ContextGlobal, keys.ActionQuit)
+		return joinHints(
+			hintNav(down, up, "move"),
+			hintKey(sel, "select"),
+			hintKey(quit, "quit"),
+		)
 	case sb.activePane == "chat" && sb.mode == keys.ModeInsert:
 		send := sb.keyMap.KeyFor(keys.ContextComposer, keys.ActionConfirm)
 		normal := sb.keyMap.KeyFor(keys.ContextComposer, keys.ActionNormal)

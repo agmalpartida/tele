@@ -53,3 +53,10 @@ func TestMessage_PhotoField(t *testing.T) {
 	require.Equal(t, int64(42), m.Photo.ID)
 	require.Equal(t, "m", m.Photo.ThumbSize)
 }
+
+func TestChat_NewFields(t *testing.T) {
+	c := store.Chat{IsContact: true, IsBot: false, IsMuted: true}
+	assert.True(t, c.IsContact)
+	assert.False(t, c.IsBot)
+	assert.True(t, c.IsMuted)
+}

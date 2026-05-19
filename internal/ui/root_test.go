@@ -24,6 +24,9 @@ type mockTGClient struct {
 }
 
 func (m *mockTGClient) GetDialogs(_ context.Context) ([]store.Chat, error) { return nil, nil }
+func (m *mockTGClient) GetDialogFilters(_ context.Context) ([]store.FolderFilter, error) {
+	return nil, nil
+}
 func (m *mockTGClient) GetHistory(_ context.Context, _ store.Peer, _ int, _ int) ([]store.Message, error) {
 	return m.history, nil
 }
@@ -530,4 +533,64 @@ func TestRoot_Send_SentinelCarriesReplyToMsgID(t *testing.T) {
 	msgs := st.Messages(1)
 	require.Len(t, msgs, 1)
 	assert.Equal(t, 10, msgs[0].ReplyToMsgID, "sentinel must carry ReplyToMsgID")
+}
+
+func TestRoot_h_CyclesFocusLeft(t *testing.T) {
+	m := ui.NewRootModel(nil, nil, 50, false)
+	m = m.WithScreen(ui.ScreenMain)
+	m = m.WithFocus(ui.FocusChat)
+	newM, _ := m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
+	root := newM.(ui.RootModel)
+	assert.Equal(t, ui.FocusChatList, root.CurrentFocus())
+}
+
+func TestRoot_l_CyclesFocusRight(t *testing.T) {
+	m := ui.NewRootModel(nil, nil, 50, false)
+	m = m.WithScreen(ui.ScreenMain)
+	assert.Equal(t, ui.FocusChatList, m.CurrentFocus())
+	newM, _ := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	root := newM.(ui.RootModel)
+	assert.Equal(t, ui.FocusChat, root.CurrentFocus())
+}
+
+func TestRoot_FolderSelectedMsg_FiltersChatList(t *testing.T) {
+	st := store.NewMemory()
+	st.SetChat(store.Chat{ID: 1, Title: "Alice", Peer: store.Peer{ID: 1, Type: store.PeerUser}, IsContact: true})
+	st.SetChat(store.Chat{ID: 2, Title: "Group", Peer: store.Peer{ID: 2, Type: store.PeerGroup}})
+	m := ui.NewRootModel(nil, st, 50, false)
+	m = m.WithScreen(ui.ScreenMain)
+
+	filter := store.FolderFilter{ID: 1, Title: "Contacts", Contacts: true}
+	newM, _ := m.Update(ui.FolderFiltersMsg{Filters: []store.FolderFilter{filter}})
+	m = newM.(ui.RootModel)
+
+	// Select the Contacts folder
+	selectedFilter := filter
+	newM, _ = m.Update(screens.FolderSelectedMsg{Filter: &selectedFilter})
+	root := newM.(ui.RootModel)
+
+	// Only the contact chat should be in the chatlist
+	chats := root.ChatList().Chats()
+	require.Len(t, chats, 1)
+	assert.Equal(t, int64(1), chats[0].ID)
+}
+
+func TestRoot_FolderFiltersMsg_SetsFolders(t *testing.T) {
+	m := ui.NewRootModel(nil, nil, 50, false)
+	m = m.WithScreen(ui.ScreenMain)
+	filters := []store.FolderFilter{{ID: 1, Title: "Work"}}
+	newM, _ := m.Update(ui.FolderFiltersMsg{Filters: filters})
+	root := newM.(ui.RootModel)
+	assert.True(t, root.HasFolders())
+}
+
+func TestRoot_0_FocusesFolders(t *testing.T) {
+	m := ui.NewRootModel(nil, nil, 50, false)
+	m = m.WithScreen(ui.ScreenMain)
+	filters := []store.FolderFilter{{ID: 1, Title: "Work"}}
+	m2, _ := m.Update(ui.FolderFiltersMsg{Filters: filters})
+	root := m2.(ui.RootModel)
+	newM, _ := root.Update(tea.KeyPressMsg{Code: '0', Text: "0"})
+	root2 := newM.(ui.RootModel)
+	assert.Equal(t, ui.FocusFolders, root2.CurrentFocus())
 }

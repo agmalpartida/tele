@@ -97,7 +97,7 @@ func (c *GotdClient) MarkRead(ctx context.Context, peer store.Peer, maxID int) e
 		return fmt.Errorf("not connected")
 	}
 	return WithRetry(ctx, func() error {
-		if peer.Type == store.PeerChannel {
+		if peer.Type == store.PeerChannel || peer.Type == store.PeerSuperGroup {
 			_, err := api.ChannelsReadHistory(ctx, &tg.ChannelsReadHistoryRequest{
 				Channel: &tg.InputChannel{ChannelID: peer.ID, AccessHash: peer.AccessHash},
 				MaxID:   maxID,
@@ -121,8 +121,8 @@ func (c *GotdClient) DeleteMessages(ctx context.Context, peer store.Peer, ids []
 	}
 	c.log.Debug("DeleteMessages", zap.Int64("peer_id", peer.ID), zap.Int("count", len(ids)), zap.Bool("revoke", revoke))
 	return WithRetry(ctx, func() error {
-		if peer.Type == store.PeerChannel {
-			// Channel messages are always deleted for all members; revoke is N/A.
+		if peer.Type == store.PeerChannel || peer.Type == store.PeerSuperGroup {
+			// Channel/supergroup messages are always deleted for all members; revoke is N/A.
 			_, err := api.ChannelsDeleteMessages(ctx, &tg.ChannelsDeleteMessagesRequest{
 				Channel: &tg.InputChannel{ChannelID: peer.ID, AccessHash: peer.AccessHash},
 				ID:      ids,
@@ -164,7 +164,7 @@ func peerToInput(p store.Peer) tg.InputPeerClass {
 		return &tg.InputPeerUser{UserID: p.ID, AccessHash: p.AccessHash}
 	case store.PeerGroup:
 		return &tg.InputPeerChat{ChatID: p.ID}
-	case store.PeerChannel:
+	case store.PeerChannel, store.PeerSuperGroup:
 		return &tg.InputPeerChannel{ChannelID: p.ID, AccessHash: p.AccessHash}
 	default:
 		return &tg.InputPeerEmpty{}

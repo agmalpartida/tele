@@ -4,6 +4,7 @@ type Context string
 
 const (
 	ContextGlobal        Context = "global"
+	ContextFolders       Context = "folders"
 	ContextChatList      Context = "chatlist"
 	ContextChat          Context = "chat"
 	ContextComposer      Context = "composer"
@@ -13,9 +14,12 @@ const (
 )
 
 const (
-	ActionFocusLeft  Action = "focus_left"
-	ActionFocusRight Action = "focus_right"
-	ActionQuit       Action = "quit"
+	ActionFocusChatList Action = "focus_chatlist"
+	ActionFocusChat     Action = "focus_chat"
+	ActionFocusFolders  Action = "focus_folders"
+	ActionFocusPrev     Action = "focus_prev"
+	ActionFocusNext     Action = "focus_next"
+	ActionQuit          Action = "quit"
 )
 
 // ActionMsg wraps an Action as a bubbletea message.
@@ -27,15 +31,23 @@ type KeyMap map[Context]map[string]Action
 func DefaultKeyMap() KeyMap {
 	return KeyMap{
 		ContextGlobal: {
-			"1":      ActionFocusLeft,
-			"2":      ActionFocusRight,
-			"h":      ActionFocusLeft,
-			"l":      ActionFocusRight,
-			"left":   ActionFocusLeft,
-			"right":  ActionFocusRight,
+			"0":      ActionFocusFolders,
+			"1":      ActionFocusChatList,
+			"2":      ActionFocusChat,
+			"h":      ActionFocusPrev,
+			"l":      ActionFocusNext,
+			"left":   ActionFocusPrev,
+			"right":  ActionFocusNext,
 			"ctrl+c": ActionQuit,
 			"ctrl+q": ActionQuit,
 			"q":      ActionQuit,
+		},
+		ContextFolders: {
+			"j":     ActionDown,
+			"k":     ActionUp,
+			"down":  ActionDown,
+			"up":    ActionUp,
+			"enter": ActionConfirm,
 		},
 		ContextChatList: {
 			"j":      ActionDown,

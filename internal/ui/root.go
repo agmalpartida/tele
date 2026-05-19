@@ -31,7 +31,8 @@ const (
 type Focus int
 
 const (
-	FocusChatList Focus = iota
+	FocusFolders  Focus = iota
+	FocusChatList
 	FocusChat
 )
 
@@ -64,6 +65,10 @@ type historyChunkMsg struct {
 	messages []store.Message
 }
 
+type FolderFiltersMsg struct {
+	Filters []store.FolderFilter
+}
+
 type RootModel struct {
 	screen        Screen
 	focus         Focus
@@ -86,6 +91,8 @@ type RootModel struct {
 	nextSentinel       int
 	chatListPendingKey string
 	contextMenu        *components.ContextMenu
+	folderBar          *screens.FoldersModel
+	activeFilter       *store.FolderFilter
 }
 
 func NewRootModel(client internaltg.Client, st store.Store, historyLimit int, verbose bool) RootModel {
@@ -97,6 +104,7 @@ func NewRootModel(client internaltg.Client, st store.Store, historyLimit int, ve
 		focus:        FocusChatList,
 		chatList:     screens.NewChatListModel(),
 		chat:         screens.NewChatModel(80, 24),
+		folderBar:    screens.NewFoldersModel(),
 		statusBar:    sb,
 		vimState:     keys.NewVimState(),
 		keyMap:       km,
@@ -113,6 +121,7 @@ func (m RootModel) CurrentFocus() Focus              { return m.focus }
 func (m RootModel) ChatList() *screens.ChatListModel { return m.chatList }
 func (m RootModel) Chat() *screens.ChatModel         { return m.chat }
 func (m RootModel) VimMode() keys.VimMode            { return m.vimState.Mode }
+func (m RootModel) HasFolders() bool                 { return m.folderBar != nil && m.folderBar.HasFolders() }
 
 // WithScreen returns a copy with the given screen set (used in tests and app init).
 func (m RootModel) WithScreen(s Screen) RootModel {
@@ -138,6 +147,44 @@ func (m *RootModel) SetOnChatOpen(fn func(int64)) {
 	m.onChatOpen = fn
 }
 
+func (m RootModel) filteredChats() []store.Chat {
+	if m.st == nil {
+		return nil
+	}
+	all := m.st.Chats()
+	if m.activeFilter == nil {
+		return all
+	}
+	out := make([]store.Chat, 0, len(all))
+	for _, c := range all {
+		if m.activeFilter.Matches(c) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func (m RootModel) computeFolderUnreads() map[int]int {
+	counts := make(map[int]int)
+	if m.st == nil || m.folderBar == nil {
+		return counts
+	}
+	chats := m.st.Chats()
+	for _, f := range m.folderBar.Folders() {
+		if f.ID == 0 {
+			continue
+		}
+		total := 0
+		for _, c := range chats {
+			if f.Matches(c) {
+				total += c.UnreadCount
+			}
+		}
+		counts[f.ID] = total
+	}
+	return counts
+}
+
 func (m RootModel) Init() tea.Cmd {
 	m.statusBar.SetVerbose(m.verbose)
 	m.statusBar.SetActivePane("chatlist")
@@ -150,10 +197,43 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.statusBar.SetWidth(msg.Width)
-		leftW, rightW := layout.SplitHorizontal(msg.Width, msg.Height, 0.30)
 		paneH := msg.Height - 1
-		m.chatList.SetSize(leftW-2*borderSize, paneH-2*borderSize)
-		m.chat.SetSize(rightW-2*borderSize, paneH-2*borderSize)
+		innerH := paneH - 2*borderSize
+		if m.folderBar != nil && m.folderBar.HasFolders() {
+			const sidebarW = 18
+			_, chatlistW, chatW := layout.SplitThree(msg.Width, sidebarW, 0.30)
+			m.folderBar.SetSize(sidebarW-2*borderSize, innerH)
+			m.chatList.SetSize(chatlistW-2*borderSize, innerH)
+			m.chat.SetSize(chatW-2*borderSize, innerH)
+		} else {
+			leftW, rightW := layout.SplitHorizontal(msg.Width, msg.Height, 0.30)
+			m.chatList.SetSize(leftW-2*borderSize, innerH)
+			m.chat.SetSize(rightW-2*borderSize, innerH)
+		}
+		return m, nil
+
+	case FolderFiltersMsg:
+		if m.folderBar != nil {
+			m.folderBar.SetFolders(msg.Filters)
+			if m.width > 0 && m.height > 0 {
+				const sidebarW = 18
+				paneH := m.height - 1
+				innerH := paneH - 2*borderSize
+				_, chatlistW, chatW := layout.SplitThree(m.width, sidebarW, 0.30)
+				m.folderBar.SetSize(sidebarW-2*borderSize, innerH)
+				m.chatList.SetSize(chatlistW-2*borderSize, innerH)
+				m.chat.SetSize(chatW-2*borderSize, innerH)
+			}
+			m.folderBar.SetUnreadCounts(m.computeFolderUnreads())
+		}
+		return m, nil
+
+	case screens.FolderSelectedMsg:
+		m.activeFilter = msg.Filter
+		m.chatList.SetChats(m.filteredChats())
+		if m.folderBar != nil {
+			m.folderBar.SetUnreadCounts(m.computeFolderUnreads())
+		}
 		return m, nil
 
 	case screens.TransitionToMainMsg:
@@ -161,7 +241,10 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.statusBar.SetVerbose(m.verbose)
 		m.statusBar.SetActivePane("chatlist")
 		if m.st != nil {
-			m.chatList.SetChats(m.st.Chats())
+			m.chatList.SetChats(m.filteredChats())
+		}
+		if m.folderBar != nil {
+			m.folderBar.SetUnreadCounts(m.computeFolderUnreads())
 		}
 		return m, nil
 
@@ -270,7 +353,10 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Kind {
 		case store.EventNewMessage:
 			m.st.AppendMessage(msg.Message)
-			m.chatList.SetChats(m.st.Chats())
+			m.chatList.SetChats(m.filteredChats())
+			if m.folderBar != nil {
+				m.folderBar.SetUnreadCounts(m.computeFolderUnreads())
+			}
 			if msg.Message.ChatID == m.currentChatID {
 				m.chat.SetMessages(m.st.Messages(m.currentChatID))
 				return m, m.markReadCmd()
@@ -280,6 +366,9 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.st.UpdateChatReadMaxID(msg.ChatID, msg.ReadMaxID)
 			if chat, ok := m.st.GetChat(msg.ChatID); ok {
 				m.chatList.SetChatUnread(msg.ChatID, chat.UnreadCount)
+			}
+			if m.folderBar != nil {
+				m.folderBar.SetUnreadCounts(m.computeFolderUnreads())
 			}
 		case store.EventReadOutbox:
 			m.st.UpdateChatOutboxReadMaxID(msg.ChatID, msg.ReadMaxID)
@@ -450,10 +539,19 @@ func (m RootModel) handleMainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	// Global bindings always take priority
 	switch m.keyMap.Resolve(keys.ContextGlobal, keyStr) {
-	case keys.ActionFocusLeft:
+	case keys.ActionFocusChatList:
 		return m.focusPane(FocusChatList)
-	case keys.ActionFocusRight:
+	case keys.ActionFocusChat:
 		return m.focusPane(FocusChat)
+	case keys.ActionFocusPrev:
+		return m.focusPrev()
+	case keys.ActionFocusNext:
+		return m.focusNext()
+	case keys.ActionFocusFolders:
+		if m.folderBar != nil && m.folderBar.HasFolders() {
+			return m.focusPane(FocusFolders)
+		}
+		return m, nil
 	case keys.ActionQuit:
 		return m, tea.Quit
 	}
@@ -461,6 +559,16 @@ func (m RootModel) handleMainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if keyStr == "/" {
 		if m.st != nil {
 			m.searchModel = screens.NewSearchModel(m.st.Chats(), m.width, m.height, m.keyMap)
+		}
+		return m, nil
+	}
+
+	if m.focus == FocusFolders {
+		action := m.keyMap.Resolve(keys.ContextFolders, keyStr)
+		if action != keys.ActionNone {
+			newPane, cmd := m.folderBar.Update(keys.ActionMsg{Action: action})
+			m.folderBar = newPane.(*screens.FoldersModel)
+			return m, cmd
 		}
 		return m, nil
 	}
@@ -647,6 +755,38 @@ func (m *RootModel) activateEdit(msgID int) tea.Cmd {
 	return nil
 }
 
+func (m RootModel) focusPrev() (tea.Model, tea.Cmd) {
+	hasFolders := m.folderBar != nil && m.folderBar.HasFolders()
+	switch m.focus {
+	case FocusChat:
+		return m.focusPane(FocusChatList)
+	case FocusChatList:
+		if hasFolders {
+			return m.focusPane(FocusFolders)
+		}
+		return m, nil
+	case FocusFolders:
+		return m.focusPane(FocusChat)
+	}
+	return m, nil
+}
+
+func (m RootModel) focusNext() (tea.Model, tea.Cmd) {
+	hasFolders := m.folderBar != nil && m.folderBar.HasFolders()
+	switch m.focus {
+	case FocusFolders:
+		return m.focusPane(FocusChatList)
+	case FocusChatList:
+		return m.focusPane(FocusChat)
+	case FocusChat:
+		if hasFolders {
+			return m.focusPane(FocusFolders)
+		}
+		return m, nil
+	}
+	return m, nil
+}
+
 func (m RootModel) focusPane(target Focus) (tea.Model, tea.Cmd) {
 	if target == m.focus {
 		return m, nil
@@ -668,9 +808,15 @@ func (m RootModel) focusPane(target Focus) (tea.Model, tea.Cmd) {
 	m.focus = target
 	m.chatList.SetFocused(target == FocusChatList)
 	m.chat.SetFocused(target == FocusChat)
-	if target == FocusChatList {
+	if m.folderBar != nil {
+		m.folderBar.SetFocused(target == FocusFolders)
+	}
+	switch target {
+	case FocusFolders:
+		m.statusBar.SetActivePane("folders")
+	case FocusChatList:
 		m.statusBar.SetActivePane("chatlist")
-	} else {
+	case FocusChat:
 		m.statusBar.SetActivePane("chat")
 	}
 	return m, nil
@@ -696,27 +842,44 @@ func (m RootModel) View() tea.View {
 		loginBox := components.RenderBox(padded, "Telegram", "", b, innerW+2, innerH+2)
 		content = lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, loginBox)
 	} else {
-		leftW, rightW := layout.SplitHorizontal(m.width, m.height, 0.30)
 		paneH := m.height + 1
 		innerH := paneH - 2*borderSize
 
 		activeBorder := lipgloss.DoubleBorder()
 		inactiveBorder := lipgloss.NormalBorder()
 
-		chatListBorder, chatBorder := inactiveBorder, inactiveBorder
-		if m.focus == FocusChatList {
+		foldersBorder := inactiveBorder
+		chatListBorder := inactiveBorder
+		chatBorder := inactiveBorder
+		switch m.focus {
+		case FocusFolders:
+			foldersBorder = activeBorder
+		case FocusChatList:
 			chatListBorder = activeBorder
-		} else {
+		case FocusChat:
 			chatBorder = activeBorder
 		}
 
-		chatListWidth := leftW - 2*borderSize + 2
-		chatWidth := rightW - 2*borderSize + 2
+		chatListTitle := "[1] Chats"
+		chatTitle := "[2] " + m.chat.Title()
 
-		chatListView := components.RenderBox(m.chatList.View(), "[1] Chats", "", chatListBorder, chatListWidth, innerH)
-		chatView := components.RenderBox(m.chat.View(), "[2] "+m.chat.Title(), "", chatBorder, chatWidth, innerH)
+		var main string
+		if m.folderBar != nil && m.folderBar.HasFolders() {
+			const sidebarW = 18
+			_, chatlistW, chatW := layout.SplitThree(m.width, sidebarW, 0.30)
+			foldersView := components.RenderBox(m.folderBar.View(), "[0] Folders", "", foldersBorder, sidebarW, innerH)
+			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", chatListBorder, chatlistW, innerH)
+			chatView := components.RenderBox(m.chat.View(), chatTitle, "", chatBorder, chatW, innerH)
+			main = lipgloss.JoinHorizontal(lipgloss.Top, foldersView, chatListView, chatView)
+		} else {
+			leftW, rightW := layout.SplitHorizontal(m.width, m.height, 0.30)
+			chatListWidth := leftW - 2*borderSize + 2
+			chatWidth := rightW - 2*borderSize + 2
+			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", chatListBorder, chatListWidth, innerH)
+			chatView := components.RenderBox(m.chat.View(), chatTitle, "", chatBorder, chatWidth, innerH)
+			main = lipgloss.JoinHorizontal(lipgloss.Top, chatListView, chatView)
+		}
 
-		main := lipgloss.JoinHorizontal(lipgloss.Top, chatListView, chatView)
 		content = main + "\n" + m.statusBar.View()
 		if m.searchModel != nil {
 			content = overlayCenter(content, m.searchModel.View(), m.width, m.height)

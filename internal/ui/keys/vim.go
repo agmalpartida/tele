@@ -68,10 +68,6 @@ func (vs *VimState) Process(key string) Action {
 		return ActionDown
 	case "k", "up":
 		return ActionUp
-	case "h":
-		return ActionLeft
-	case "l":
-		return ActionRight
 	case "G":
 		return ActionGoBottom
 	case "g":

@@ -64,7 +64,7 @@ func NewChatModel(width, height int) *ChatModel {
 func (m *ChatModel) SetChat(chat *store.Chat) {
 	m.chat = chat
 	if chat != nil {
-		m.msgList.SetIsGroup(chat.Peer.Type == store.PeerGroup || chat.Peer.Type == store.PeerChannel)
+		m.msgList.SetIsGroup(chat.Peer.IsGroup() || chat.Peer.IsChannel())
 		m.msgList.SetOutboxReadMaxID(chat.ReadOutboxMaxID)
 	} else {
 		m.msgList.SetIsGroup(false)

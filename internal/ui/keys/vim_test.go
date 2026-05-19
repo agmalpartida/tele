@@ -11,8 +11,9 @@ func TestVimState_BasicMotions(t *testing.T) {
 	vs := keys.NewVimState()
 	assert.Equal(t, keys.ActionDown, vs.Process("j"))
 	assert.Equal(t, keys.ActionUp, vs.Process("k"))
-	assert.Equal(t, keys.ActionLeft, vs.Process("h"))
-	assert.Equal(t, keys.ActionRight, vs.Process("l"))
+	// h/l are handled by global focus bindings before vim sees them
+	assert.Equal(t, keys.ActionNone, vs.Process("h"))
+	assert.Equal(t, keys.ActionNone, vs.Process("l"))
 }
 
 func TestVimState_GG(t *testing.T) {

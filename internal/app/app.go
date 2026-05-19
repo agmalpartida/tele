@@ -122,6 +122,20 @@ func (a *App) Run() error {
 			}
 			prog.Send(screens.TransitionToMainMsg{})
 		}()
+
+		// Load dialog filters concurrently
+		go func() {
+			filters, err := a.client.GetDialogFilters(ctx)
+			if err != nil {
+				a.log.Warn("GetDialogFilters failed", zap.Error(err))
+				return
+			}
+			if len(filters) == 0 {
+				return
+			}
+			a.log.Info("folder filters loaded", zap.Int("count", len(filters)))
+			prog.Send(ui.FolderFiltersMsg{Filters: filters})
+		}()
 	}()
 
 	// Bridge: incoming updates → bubbletea

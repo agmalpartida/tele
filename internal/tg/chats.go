@@ -3,6 +3,7 @@ package tg
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"time"
@@ -22,23 +23,169 @@ func (c *GotdClient) GetDialogs(ctx context.Context) ([]store.Chat, error) {
 	}
 
 	c.log.Debug("GetDialogs start")
-	var chats []store.Chat
-	err := WithRetry(ctx, func() error {
-		result, err := api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
-			Limit:      100,
-			OffsetDate: 0,
-			OffsetID:   0,
-			OffsetPeer: &tg.InputPeerEmpty{},
+
+	const pageSize = 100
+	const maxPages = 30 // safety cap: 3000 dialogs max
+
+	// Accumulators across pages (deduplicate by peer ID)
+	seenPeer := make(map[int64]struct{})
+	var allDialogs []tg.DialogClass
+	var allMsgs []tg.MessageClass
+	userMap := make(map[int64]*tg.User)
+	chatMap := make(map[int64]tg.ChatClass)
+
+	offsetDate, offsetID := 0, 0
+	var offsetPeer tg.InputPeerClass = &tg.InputPeerEmpty{}
+
+	for page := 0; page < maxPages; page++ {
+		var result tg.MessagesDialogsClass
+		err := WithRetry(ctx, func() error {
+			var err error
+			result, err = api.MessagesGetDialogs(ctx, &tg.MessagesGetDialogsRequest{
+				Limit:      pageSize,
+				OffsetDate: offsetDate,
+				OffsetID:   offsetID,
+				OffsetPeer: offsetPeer,
+			})
+			if err != nil {
+				c.log.Error("MessagesGetDialogs failed", zap.Error(err))
+			}
+			return err
 		})
 		if err != nil {
-			c.log.Error("MessagesGetDialogs failed", zap.Error(err))
-			return err
+			return nil, err
 		}
-		chats = c.parseDialogs(result)
-		c.log.Debug("GetDialogs done", zap.Int("count", len(chats)))
-		return nil
-	})
-	return chats, err
+
+		var dialogs []tg.DialogClass
+		var msgs []tg.MessageClass
+		var users []tg.UserClass
+		var chatsRaw []tg.ChatClass
+		totalExpected := 0
+		done := false
+
+		switch v := result.(type) {
+		case *tg.MessagesDialogs:
+			dialogs, msgs, users, chatsRaw = v.Dialogs, v.Messages, v.Users, v.Chats
+			done = true
+		case *tg.MessagesDialogsSlice:
+			dialogs, msgs, users, chatsRaw = v.Dialogs, v.Messages, v.Users, v.Chats
+			totalExpected = v.Count
+		default:
+			done = true
+		}
+
+		// Merge users and chats into maps (latest wins on collision)
+		for _, u := range users {
+			if user, ok := u.(*tg.User); ok {
+				userMap[user.ID] = user
+			}
+		}
+		for _, ch := range chatsRaw {
+			switch v := ch.(type) {
+			case *tg.Chat:
+				chatMap[v.ID] = v
+			case *tg.Channel:
+				chatMap[v.ID] = v
+			}
+		}
+
+		// Append new (non-duplicate) dialogs
+		newCount := 0
+		for _, d := range dialogs {
+			dlg, ok := d.(*tg.Dialog)
+			if !ok {
+				continue
+			}
+			id := peerIDFromPeer(dlg.Peer)
+			if id == 0 {
+				continue
+			}
+			if _, dup := seenPeer[id]; dup {
+				continue
+			}
+			seenPeer[id] = struct{}{}
+			allDialogs = append(allDialogs, d)
+			newCount++
+		}
+		allMsgs = append(allMsgs, msgs...)
+
+		c.log.Debug("GetDialogs page",
+			zap.Int("page", page),
+			zap.Int("new", newCount),
+			zap.Int("total", len(allDialogs)),
+			zap.Int("expected", totalExpected),
+		)
+
+		if done || newCount == 0 {
+			break
+		}
+		if totalExpected > 0 && len(allDialogs) >= totalExpected {
+			break
+		}
+
+		// Compute next page offset from last dialog in this batch
+		var lastDlg *tg.Dialog
+		for i := len(dialogs) - 1; i >= 0; i-- {
+			if dlg, ok := dialogs[i].(*tg.Dialog); ok {
+				lastDlg = dlg
+				break
+			}
+		}
+		if lastDlg == nil {
+			break
+		}
+
+		// Find the top_message date for this dialog
+		msgDateIndex := make(map[int]int, len(msgs))
+		for _, raw := range msgs {
+			if m, ok := raw.(*tg.Message); ok {
+				msgDateIndex[m.ID] = m.Date
+			}
+		}
+		nextDate := msgDateIndex[lastDlg.TopMessage]
+		if nextDate == 0 {
+			break
+		}
+		offsetDate = nextDate
+		offsetID = lastDlg.TopMessage
+		offsetPeer = buildOffsetPeer(lastDlg.Peer, userMap, chatMap)
+	}
+
+	// Build final result using the accumulated data
+	userSlice := make([]tg.UserClass, 0, len(userMap))
+	for _, u := range userMap {
+		userSlice = append(userSlice, u)
+	}
+	chatSlice := make([]tg.ChatClass, 0, len(chatMap))
+	for _, ch := range chatMap {
+		chatSlice = append(chatSlice, ch)
+	}
+	synthetic := &tg.MessagesDialogs{
+		Dialogs:  allDialogs,
+		Messages: allMsgs,
+		Users:    userSlice,
+		Chats:    chatSlice,
+	}
+	chats := c.parseDialogs(synthetic)
+	c.log.Debug("GetDialogs done", zap.Int("count", len(chats)))
+	return chats, nil
+}
+
+// buildOffsetPeer constructs the InputPeer for getDialogs pagination offset.
+func buildOffsetPeer(peer tg.PeerClass, userMap map[int64]*tg.User, chatMap map[int64]tg.ChatClass) tg.InputPeerClass {
+	switch p := peer.(type) {
+	case *tg.PeerUser:
+		if u, ok := userMap[p.UserID]; ok {
+			return &tg.InputPeerUser{UserID: u.ID, AccessHash: u.AccessHash}
+		}
+	case *tg.PeerChat:
+		return &tg.InputPeerChat{ChatID: p.ChatID}
+	case *tg.PeerChannel:
+		if ch, ok := chatMap[p.ChannelID].(*tg.Channel); ok {
+			return &tg.InputPeerChannel{ChannelID: ch.ID, AccessHash: ch.AccessHash}
+		}
+	}
+	return &tg.InputPeerEmpty{}
 }
 
 type dialogMeta struct {
@@ -134,6 +281,7 @@ func (c *GotdClient) parseDialogs(result tg.MessagesDialogsClass) []store.Chat {
 		if !converted {
 			continue
 		}
+		chat.IsMuted = isMuted(dlg)
 		chat.Pinned = m.pinned
 		chat.UnreadCount = dlg.UnreadCount
 		chat.ReadInboxMaxID = dlg.ReadInboxMaxID
@@ -186,9 +334,11 @@ func convertUser(u *tg.User) (store.Chat, bool) {
 		}
 	}
 	return store.Chat{
-		ID:    u.ID,
-		Title: name,
-		Peer:  store.Peer{ID: u.ID, Type: store.PeerUser, AccessHash: u.AccessHash},
+		ID:        u.ID,
+		Title:     name,
+		Peer:      store.Peer{ID: u.ID, Type: store.PeerUser, AccessHash: u.AccessHash},
+		IsContact: u.Contact,
+		IsBot:     u.Bot,
 	}, true
 }
 
@@ -207,9 +357,25 @@ func convertChannel(ch *tg.Channel) (store.Chat, bool) {
 	if ch == nil {
 		return store.Chat{}, false
 	}
+	peerType := store.PeerChannel
+	if ch.Megagroup {
+		peerType = store.PeerSuperGroup
+	}
 	return store.Chat{
 		ID:    ch.ID,
 		Title: ch.Title,
-		Peer:  store.Peer{ID: ch.ID, Type: store.PeerChannel, AccessHash: ch.AccessHash},
+		Peer:  store.Peer{ID: ch.ID, Type: peerType, AccessHash: ch.AccessHash},
 	}, true
+}
+
+func isMuted(d *tg.Dialog) bool {
+	muteUntil, hasMute := d.NotifySettings.GetMuteUntil()
+	if !hasMute {
+		return false
+	}
+	const mutedIndefinitely = math.MaxInt32
+	if muteUntil == mutedIndefinitely {
+		return true
+	}
+	return muteUntil > int(time.Now().Unix())
 }
