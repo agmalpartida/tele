@@ -252,10 +252,11 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case screens.FolderSelectedMsg:
 		m.activeFilter = msg.Filter
 		m.chatList.SetChats(m.filteredChats())
+		m.chatList.SetActiveByID(m.currentChatID)
 		if m.folderBar != nil {
 			m.folderBar.SetUnreadCounts(m.computeFolderUnreads())
 		}
-		return m, nil
+		return m.focusPane(FocusChatList)
 
 	case screens.TransitionToMainMsg:
 		m.screen = ScreenMain
@@ -275,8 +276,11 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case screens.OpenChatMsg:
 		m.searchModel = nil
+		if msg.Chat.ID == m.currentChatID {
+			return m.focusPane(FocusChat)
+		}
 		m.currentChatID = msg.Chat.ID
-		m.chatList.SetCursorByID(msg.Chat.ID)
+		m.chatList.SetActiveByID(msg.Chat.ID)
 		if m.onChatOpen != nil {
 			m.onChatOpen(msg.Chat.ID)
 		}
@@ -977,13 +981,6 @@ func (m RootModel) focusPane(target Focus) (tea.Model, tea.Cmd) {
 		m.statusBar.SetMode(keys.ModeNormal)
 		newPane, _ := m.chat.Update(keys.ActionMsg{Action: keys.ActionNormal})
 		m.chat = newPane.(*screens.ChatModel)
-	}
-	if target == FocusChat {
-		// Open the currently highlighted chat (triggers history load + focus switch)
-		if chat, ok := m.chatList.SelectedChat(); ok {
-			return m, func() tea.Msg { return screens.OpenChatMsg{Chat: chat} }
-		}
-		// No chats loaded yet — just switch focus
 	}
 	m.focus = target
 	m.chatList.SetFocused(target == FocusChatList)

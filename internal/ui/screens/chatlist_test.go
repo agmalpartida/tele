@@ -115,3 +115,96 @@ func TestChatList_EmptyShowsSpinner(t *testing.T) {
 	assert.Contains(t, view, "Loading chats...")
 	assert.True(t, strings.HasPrefix(view, "["))
 }
+
+func TestChatList_Confirm_SetsActiveIdx(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetChats(makeTestChats())
+	newPane, _ := m.Update(keys.ActionMsg{Action: keys.ActionDown})
+	m = newPane.(*screens.ChatListModel)
+	newPane, _ = m.Update(keys.ActionMsg{Action: keys.ActionConfirm})
+	m = newPane.(*screens.ChatListModel)
+	assert.Equal(t, 1, m.ActiveIdx())
+}
+
+func TestChatList_Navigation_DoesNotChangeActiveIdx(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetChats(makeTestChats())
+	assert.Equal(t, 0, m.ActiveIdx())
+	newPane, _ := m.Update(keys.ActionMsg{Action: keys.ActionDown})
+	m = newPane.(*screens.ChatListModel)
+	newPane, _ = m.Update(keys.ActionMsg{Action: keys.ActionDown})
+	m = newPane.(*screens.ChatListModel)
+	assert.Equal(t, 2, m.Cursor(), "cursor moved")
+	assert.Equal(t, 0, m.ActiveIdx(), "activeIdx unchanged without Enter")
+}
+
+func TestChatList_SetChats_PreservesActiveIdxByID(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetChats(makeTestChats())
+	newPane, _ := m.Update(keys.ActionMsg{Action: keys.ActionDown})
+	m = newPane.(*screens.ChatListModel)
+	newPane, _ = m.Update(keys.ActionMsg{Action: keys.ActionConfirm})
+	m = newPane.(*screens.ChatListModel)
+	require.Equal(t, 1, m.ActiveIdx())
+	m.SetChats([]store.Chat{
+		{ID: 2, Title: "Bob"},
+		{ID: 1, Title: "Alice"},
+		{ID: 3, Title: "Charlie"},
+	})
+	assert.Equal(t, 0, m.ActiveIdx(), "activeIdx followed Bob(id=2) to new position")
+}
+
+func TestChatList_SetActiveByID_SetsBothCursorAndActive(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetChats(makeTestChats())
+	m.SetActiveByID(3)
+	assert.Equal(t, 2, m.ActiveIdx())
+	assert.Equal(t, 2, m.Cursor())
+}
+
+func TestChatList_View_ShowsArrowOnActiveItem(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetSize(40, 20)
+	m.SetChats(makeTestChats())
+	newPane, _ := m.Update(keys.ActionMsg{Action: keys.ActionDown})
+	m = newPane.(*screens.ChatListModel)
+	newPane, _ = m.Update(keys.ActionMsg{Action: keys.ActionConfirm})
+	m = newPane.(*screens.ChatListModel)
+
+	lines := strings.Split(m.View(), "\n")
+	require.GreaterOrEqual(t, len(lines), 2)
+	assert.Contains(t, lines[1], "▶", "active item (Bob, index 1) must show ▶")
+	assert.NotContains(t, lines[0], "▶", "non-active item (Alice, index 0) must not show ▶")
+}
+
+func TestChatList_View_NoHighlightWhenUnfocused(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetSize(40, 20)
+	m.SetChats(makeTestChats())
+	m.SetFocused(false)
+	view := m.View()
+	assert.Contains(t, view, "Alice")
+}
+
+func TestChatList_View_HighlightOnCursorWhenFocused(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetSize(40, 20)
+	m.SetChats(makeTestChats())
+	m.SetFocused(true)
+	view := m.View()
+	assert.Contains(t, view, "Alice", "cursor row must appear")
+}
+
+func TestChatList_SelectedChat_ReturnsActiveItem(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetChats(makeTestChats())
+	newPane, _ := m.Update(keys.ActionMsg{Action: keys.ActionDown})
+	m = newPane.(*screens.ChatListModel)
+	newPane, _ = m.Update(keys.ActionMsg{Action: keys.ActionConfirm})
+	m = newPane.(*screens.ChatListModel)
+	newPane, _ = m.Update(keys.ActionMsg{Action: keys.ActionDown})
+	m = newPane.(*screens.ChatListModel)
+	chat, ok := m.SelectedChat()
+	require.True(t, ok)
+	assert.Equal(t, int64(2), chat.ID, "SelectedChat returns confirmed active item, not cursor")
+}

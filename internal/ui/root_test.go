@@ -598,6 +598,61 @@ func TestRoot_0_FocusesFolders(t *testing.T) {
 	assert.Equal(t, ui.FocusFolders, root2.CurrentFocus())
 }
 
+func TestRoot_FocusNext_DoesNotAutoOpenChat(t *testing.T) {
+	st := store.NewMemory()
+	st.SetChat(store.Chat{ID: 1, Title: "Alice"})
+	st.SetChat(store.Chat{ID: 2, Title: "Bob"})
+	m := ui.NewRootModel(nil, st, 50, false)
+	m = m.WithScreen(ui.ScreenMain)
+	newM, _ := m.Update(screens.TransitionToMainMsg{})
+	m = newM.(ui.RootModel)
+	require.Equal(t, ui.FocusChatList, m.CurrentFocus())
+
+	newM, _ = m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
+	m = newM.(ui.RootModel)
+	newM, cmd := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	m = newM.(ui.RootModel)
+
+	assert.Equal(t, ui.FocusChat, m.CurrentFocus())
+	assert.Nil(t, cmd, "switching focus must not open a chat")
+}
+
+func TestRoot_FolderSelectedMsg_FocusesChatList(t *testing.T) {
+	st := store.NewMemory()
+	m := ui.NewRootModel(nil, st, 50, false)
+	m = m.WithScreen(ui.ScreenMain)
+	filters := []store.FolderFilter{{ID: 1, Title: "Work"}}
+	newM, _ := m.Update(ui.FolderFiltersMsg{Filters: filters})
+	m = newM.(ui.RootModel)
+
+	newM, _ = m.Update(tea.KeyPressMsg{Code: '0', Text: "0"})
+	m = newM.(ui.RootModel)
+	require.Equal(t, ui.FocusFolders, m.CurrentFocus())
+
+	filter := store.FolderFilter{ID: 1, Title: "Work"}
+	newM, _ = m.Update(screens.FolderSelectedMsg{Filter: &filter})
+	m = newM.(ui.RootModel)
+
+	assert.Equal(t, ui.FocusChatList, m.CurrentFocus())
+}
+
+func TestRoot_OpenSameChatAgain_OnlyFocusesChatPane(t *testing.T) {
+	mock := &mockTGClient{}
+	m, _ := newRootWithOpenChat(t, mock)
+
+	newM, _ := m.Update(tea.KeyPressMsg{Code: 'h', Text: "h"})
+	m = newM.(ui.RootModel)
+	require.Equal(t, ui.FocusChatList, m.CurrentFocus())
+
+	newM, cmd := m.Update(screens.OpenChatMsg{Chat: store.Chat{
+		ID: 1, Title: "Alice", Peer: store.Peer{ID: 1, Type: store.PeerUser},
+	}})
+	m = newM.(ui.RootModel)
+
+	assert.Equal(t, ui.FocusChat, m.CurrentFocus())
+	assert.Nil(t, cmd, "re-opening same chat must not trigger a history reload")
+}
+
 func TestRoot_EventDeleteMessages_Channel_RemovesFromCurrentChat(t *testing.T) {
 	m, st := newRootWithTwoChats(t)
 	now := time.Now()

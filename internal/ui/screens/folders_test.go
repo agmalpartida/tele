@@ -88,6 +88,17 @@ func TestFolders_NotFocused_IgnoresKeys(t *testing.T) {
 	assert.Equal(t, 0, fm.Cursor())
 }
 
+func TestFolders_View_ShowsFilledArrowOnActiveItem(t *testing.T) {
+	m := screens.NewFoldersModel()
+	m.SetFolders(testFolders)
+	m.SetSize(16, 20)
+	view := m.View()
+	lines := strings.Split(view, "\n")
+	require.NotEmpty(t, lines)
+	assert.Contains(t, lines[0], "▶", "active item must show ▶")
+	assert.NotContains(t, lines[0], "▸", "old icon ▸ must not appear")
+}
+
 func TestFolders_TruncatedBadgeFitsWidth(t *testing.T) {
 	long := store.FolderFilter{ID: 3, Title: "Russia newsletter"}
 	m := screens.NewFoldersModel()

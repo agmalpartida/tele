@@ -135,7 +135,7 @@ func (m FoldersModel) formatEntry(f store.FolderFilter, active bool) string {
 	}
 	prefix := "  "
 	if active {
-		prefix = "▸ "
+		prefix = "▶ "
 	}
 	nameWidth := m.width - runewidth.StringWidth(prefix) - runewidth.StringWidth(badge)
 	if nameWidth < 1 {

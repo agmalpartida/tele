@@ -50,7 +50,7 @@ func TestReactionPicker_DownMoves(t *testing.T) {
 	assert.Nil(t, newP)
 	require.NotNil(t, cmd)
 	msg := cmd().(components.ReactConfirmedMsg)
-	assert.Equal(t, "💋", msg.Emoji) // one step down from top-left
+	assert.Equal(t, "💯", msg.Emoji) // one step down from top-left
 }
 
 func TestReactionPicker_LeftAtEdgeStays(t *testing.T) {

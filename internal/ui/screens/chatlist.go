@@ -18,6 +18,7 @@ type OpenChatMsg struct{ Chat store.Chat }
 var (
 	selectedChatStyle = lipgloss.NewStyle().Background(lipgloss.Color("63")).Foreground(lipgloss.Color("0"))
 	normalChatStyle   = lipgloss.NewStyle()
+	activeChatStyle   = lipgloss.NewStyle().Bold(true)
 )
 
 func formatUnread(count int) string {
@@ -31,12 +32,13 @@ func formatUnread(count int) string {
 }
 
 type ChatListModel struct {
-	chats   []store.Chat
-	cursor  int
-	width   int
-	height  int
-	focused bool
-	spinner components.Spinner
+	chats     []store.Chat
+	cursor    int
+	activeIdx int
+	width     int
+	height    int
+	focused   bool
+	spinner   components.Spinner
 }
 
 func NewChatListModel() *ChatListModel {
@@ -47,7 +49,6 @@ func NewChatListModel() *ChatListModel {
 func (m *ChatListModel) TickSpinner() { m.spinner.Tick() }
 
 func (m *ChatListModel) SetChats(chats []store.Chat) {
-	// preserve unread counts accumulated since last store sync
 	oldUnread := make(map[int64]int, len(m.chats))
 	for _, c := range m.chats {
 		if c.UnreadCount > 0 {
@@ -55,26 +56,51 @@ func (m *ChatListModel) SetChats(chats []store.Chat) {
 		}
 	}
 
-	var selectedID int64
+	var cursorID int64
 	if m.cursor < len(m.chats) {
-		selectedID = m.chats[m.cursor].ID
+		cursorID = m.chats[m.cursor].ID
 	}
+	var activeID int64
+	if m.activeIdx < len(m.chats) {
+		activeID = m.chats[m.activeIdx].ID
+	}
+
 	m.chats = chats
 	for i, c := range m.chats {
 		if n, ok := oldUnread[c.ID]; ok && n > m.chats[i].UnreadCount {
 			m.chats[i].UnreadCount = n
 		}
 	}
+
 	m.cursor = 0
 	for i, c := range m.chats {
-		if c.ID == selectedID {
+		if c.ID == cursorID {
 			m.cursor = i
 			break
 		}
 	}
+
+	m.activeIdx = 0
+	for i, c := range m.chats {
+		if c.ID == activeID {
+			m.activeIdx = i
+			break
+		}
+	}
 }
-func (m *ChatListModel) Cursor() int                 { return m.cursor }
-func (m *ChatListModel) Chats() []store.Chat         { return m.chats }
+func (m *ChatListModel) Cursor() int         { return m.cursor }
+func (m *ChatListModel) ActiveIdx() int      { return m.activeIdx }
+func (m *ChatListModel) Chats() []store.Chat { return m.chats }
+
+func (m *ChatListModel) SetActiveByID(id int64) {
+	for i, c := range m.chats {
+		if c.ID == id {
+			m.activeIdx = i
+			m.cursor = i
+			return
+		}
+	}
+}
 
 func (m *ChatListModel) IncrementUnread(chatID int64) {
 	for i := range m.chats {
@@ -95,10 +121,10 @@ func (m *ChatListModel) SetChatUnread(chatID int64, count int) {
 }
 
 func (m *ChatListModel) SelectedChat() (store.Chat, bool) {
-	if len(m.chats) == 0 || m.cursor >= len(m.chats) {
+	if len(m.chats) == 0 || m.activeIdx >= len(m.chats) {
 		return store.Chat{}, false
 	}
-	return m.chats[m.cursor], true
+	return m.chats[m.activeIdx], true
 }
 
 func (m *ChatListModel) SetCursorByID(id int64) {
@@ -158,6 +184,7 @@ func (m *ChatListModel) Update(msg tea.Msg) (layout.Pane, tea.Cmd) {
 			}
 		case keys.ActionConfirm:
 			if len(m.chats) > 0 {
+				m.activeIdx = m.cursor
 				chat := m.chats[m.cursor]
 				return m, func() tea.Msg { return OpenChatMsg{Chat: chat} }
 			}
@@ -187,9 +214,9 @@ func (m *ChatListModel) View() string {
 	if w < 1 {
 		w = 1
 	}
-	// Build lines to w-1 display columns so that the outer lipgloss container's
-	// Width(w) padding never triggers word-wrap (which fires when content >= w).
-	inner := w - 1
+	// Subtract 1 for outer container safety and 2 for the selection prefix ("▶ " or "  ").
+	const prefixW = 2
+	inner := w - 1 - prefixW
 	if inner < 1 {
 		inner = 1
 	}
@@ -198,15 +225,21 @@ func (m *ChatListModel) View() string {
 	for i := start; i < end; i++ {
 		badge := formatUnread(m.chats[i].UnreadCount)
 		title := m.chats[i].Title
-		var line string
+
+		prefix := "  "
+		if i == m.activeIdx {
+			prefix = "▶ "
+		}
+
+		var content string
 		if badge == "" {
-			line = runewidth.Truncate(title, inner, "")
-			lw := runewidth.StringWidth(line)
+			content = runewidth.Truncate(title, inner, "")
+			lw := runewidth.StringWidth(content)
 			if lw < inner {
-				line += strings.Repeat(" ", inner-lw)
+				content += strings.Repeat(" ", inner-lw)
 			}
 		} else {
-			badgeW := len(badge) // badge is ASCII only
+			badgeW := len(badge)
 			maxTitleW := inner - badgeW - 1
 			if maxTitleW < 0 {
 				maxTitleW = 0
@@ -217,11 +250,16 @@ func (m *ChatListModel) View() string {
 			if pad < 0 {
 				pad = 0
 			}
-			line = truncTitle + strings.Repeat(" ", pad) + badge
+			content = truncTitle + strings.Repeat(" ", pad) + badge
 		}
+
+		line := prefix + content
+
 		style := normalChatStyle
-		if i == m.cursor {
+		if i == m.cursor && m.focused {
 			style = selectedChatStyle
+		} else if i == m.activeIdx {
+			style = activeChatStyle
 		}
 		lines = append(lines, style.Inline(true).Render(line))
 	}
