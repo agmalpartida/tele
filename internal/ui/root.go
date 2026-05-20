@@ -354,7 +354,7 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.chat.SetImage(msg.PhotoID, msg.Image)
 		return m, nil
 
-	case screens.OpenPhotoMsg:
+	case components.OpenInViewerRequest:
 		if img, ok := m.imageCache[msg.PhotoID]; ok {
 			go openInViewer(img)
 		}
@@ -739,7 +739,8 @@ func (m RootModel) handleMainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			isOut := m.chat.SelectedMessageIsOut()
 			if msgID != 0 {
 				replyToMsgID := m.chat.SelectedMessageReplyToMsgID()
-				m.contextMenu = components.NewContextMenu(msgID, isOut, replyToMsgID, m.keyMap)
+				photoID := m.chat.SelectedMessagePhotoID()
+				m.contextMenu = components.NewContextMenu(msgID, isOut, replyToMsgID, photoID, m.keyMap)
 			}
 		}
 		return m, nil

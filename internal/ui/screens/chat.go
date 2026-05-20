@@ -23,10 +23,6 @@ type EditSendRequest struct {
 	Text  string
 }
 
-type OpenPhotoMsg struct {
-	PhotoID int64
-}
-
 type LoadMoreMsg struct {
 	ChatID   int64
 	OffsetID int
@@ -101,6 +97,7 @@ func (m *ChatModel) ComposerHeight() int              { return m.composer.Visual
 func (m *ChatModel) SelectedMessageID() int           { return m.msgList.SelectedMessageID() }
 func (m *ChatModel) SelectedMessageIsOut() bool        { return m.msgList.SelectedMessageIsOut() }
 func (m *ChatModel) SelectedMessageReplyToMsgID() int  { return m.msgList.SelectedMessageReplyToMsgID() }
+func (m *ChatModel) SelectedMessagePhotoID() int64     { return m.msgList.SelectedMessagePhotoID() }
 func (m *ChatModel) ScrollToMessage(id int) bool       { return m.msgList.ScrollToMessage(id) }
 func (m *ChatModel) ReplyToMsgID() int { return m.replyToMsgID }
 func (m *ChatModel) EditMsgID() int    { return m.editMsgID }
@@ -236,12 +233,6 @@ func (m *ChatModel) Update(msg tea.Msg) (layout.Pane, tea.Cmd) {
 			focusCmd := m.composer.Focus()
 			m.msgList.SetShowIndicator(false)
 			return m, focusCmd
-		case keys.ActionOpenPhoto:
-			photoID := m.msgList.LastVisiblePhotoID()
-			if photoID != 0 {
-				id := photoID
-				return m, func() tea.Msg { return OpenPhotoMsg{PhotoID: id} }
-			}
 		}
 		return m, nil
 

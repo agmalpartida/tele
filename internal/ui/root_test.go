@@ -638,3 +638,39 @@ func TestRoot_EventDeleteMessages_NonChannel_ScansAllChats(t *testing.T) {
 	assert.Empty(t, st.Messages(1))
 	assert.Empty(t, st.Messages(2))
 }
+
+func TestRoot_ContextMenu_PhotoMessage_ShowsOpenInViewer(t *testing.T) {
+	mock := &mockTGClient{}
+	m, st := newRootWithOpenChat(t, mock)
+	newM, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	m = newM.(ui.RootModel)
+	st.AppendMessage(store.Message{
+		ID:     10,
+		ChatID: 1,
+		Text:   "photo msg",
+		Photo:  &store.PhotoRef{ID: 77},
+		Date:   time.Now(),
+	})
+	newM, _ = m.Update(ui.ChatHistoryMsg{ChatID: 1, Messages: st.Messages(1)})
+	m = newM.(ui.RootModel)
+
+	newM, _ = m.Update(tea.KeyPressMsg{Code: ' ', Text: " "})
+	m = newM.(ui.RootModel)
+	require.True(t, m.ContextMenuOpen())
+	assert.Contains(t, m.View().Content, "Open in viewer")
+}
+
+func TestRoot_ContextMenu_NonPhotoMessage_HidesOpenInViewer(t *testing.T) {
+	mock := &mockTGClient{}
+	m, st := newRootWithOpenChat(t, mock)
+	newM, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	m = newM.(ui.RootModel)
+	st.AppendMessage(store.Message{ID: 10, ChatID: 1, Text: "text msg", Date: time.Now()})
+	newM, _ = m.Update(ui.ChatHistoryMsg{ChatID: 1, Messages: st.Messages(1)})
+	m = newM.(ui.RootModel)
+
+	newM, _ = m.Update(tea.KeyPressMsg{Code: ' ', Text: " "})
+	m = newM.(ui.RootModel)
+	require.True(t, m.ContextMenuOpen())
+	assert.NotContains(t, m.View().Content, "Open in viewer")
+}

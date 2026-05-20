@@ -25,7 +25,7 @@ const (
 	ActionNormal          Action = "normal"
 	ActionConfirm         Action = "confirm"
 	ActionSearch          Action = "search"
-	ActionOpenPhoto       Action = "open_photo"
+	ActionOpenInViewer    Action = "open_in_viewer"
 	ActionOpenContextMenu Action = "open_context_menu"
 	ActionCancel          Action = "cancel"
 	ActionReply           Action = "reply"
@@ -86,8 +86,6 @@ func (vs *VimState) Process(key string) Action {
 		return ActionConfirm
 	case "/":
 		return ActionSearch
-	case "o":
-		return ActionOpenPhoto
 	case "space":
 		return ActionOpenContextMenu
 	case "r":

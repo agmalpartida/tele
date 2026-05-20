@@ -38,6 +38,11 @@ type EditMsgRequest struct {
 	MsgID int
 }
 
+// OpenInViewerRequest is emitted when the user selects "Open in viewer" for a photo message.
+type OpenInViewerRequest struct {
+	PhotoID int64
+}
+
 type menuState int
 
 const (
@@ -70,22 +75,24 @@ type ContextMenu struct {
 	msgID        int
 	isOut        bool
 	replyToMsgID int
+	photoID      int64
 	keyMap       keys.KeyMap
 }
 
-func NewContextMenu(msgID int, isOut bool, replyToMsgID int, km keys.KeyMap) *ContextMenu {
+func NewContextMenu(msgID int, isOut bool, replyToMsgID int, photoID int64, km keys.KeyMap) *ContextMenu {
 	return &ContextMenu{
-		items:        mainItems(isOut, replyToMsgID != 0),
+		items:        mainItems(isOut, replyToMsgID != 0, photoID != 0),
 		msgID:        msgID,
 		isOut:        isOut,
 		replyToMsgID: replyToMsgID,
+		photoID:      photoID,
 		keyMap:       km,
 	}
 }
 
 func (cm *ContextMenu) Cursor() int { return cm.cursor }
 
-func mainItems(isOut bool, isReply bool) []menuItem {
+func mainItems(isOut bool, isReply bool, hasPhoto bool) []menuItem {
 	var items []menuItem
 	if isReply {
 		items = append(items, menuItem{label: "Jump to original", action: keys.ActionJumpToOriginal})
@@ -96,6 +103,9 @@ func mainItems(isOut bool, isReply bool) []menuItem {
 	)
 	if isOut {
 		items = append(items, menuItem{label: "Edit", action: keys.ActionEdit})
+	}
+	if hasPhoto {
+		items = append(items, menuItem{label: "Open in viewer", action: keys.ActionOpenInViewer})
 	}
 	items = append(items, menuItem{label: "Delete", action: keys.ActionDelete})
 	return items
@@ -158,7 +168,7 @@ func (cm *ContextMenu) Update(msg tea.Msg) (*ContextMenu, tea.Cmd) {
 	case keys.ActionCancel:
 		if cm.state == stateDeleteSub {
 			cm.state = stateMain
-			cm.items = mainItems(cm.isOut, cm.replyToMsgID != 0)
+			cm.items = mainItems(cm.isOut, cm.replyToMsgID != 0, cm.photoID != 0)
 			cm.cursor = 0
 			return cm, nil
 		}
@@ -208,6 +218,9 @@ func (cm *ContextMenu) execute() (*ContextMenu, tea.Cmd) {
 	case keys.ActionDeleteRevoke:
 		msgID := cm.msgID
 		return nil, func() tea.Msg { return DeleteMsgRequest{MsgID: msgID, Revoke: true} }
+	case keys.ActionOpenInViewer:
+		photoID := cm.photoID
+		return nil, func() tea.Msg { return OpenInViewerRequest{PhotoID: photoID} }
 	}
 	return cm, nil
 }

@@ -68,7 +68,6 @@ func DefaultKeyMap() KeyMap {
 			"i":     ActionInsert,
 			"a":     ActionInsert,
 			"esc":   ActionNormal,
-			"o":     ActionOpenPhoto,
 			"space": ActionOpenContextMenu,
 		},
 		ContextComposer: {
@@ -88,6 +87,7 @@ func DefaultKeyMap() KeyMap {
 			"e":     ActionEdit,
 			"d":     ActionDelete,
 			"g":     ActionJumpToOriginal,
+			"o":     ActionOpenInViewer,
 		},
 		ContextDeleteSubMenu: {
 			"j":     ActionDown,

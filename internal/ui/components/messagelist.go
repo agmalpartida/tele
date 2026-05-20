@@ -319,22 +319,6 @@ func (ml *MessageList) VisibleReadMaxID() int {
 	return maxID
 }
 
-// LastVisiblePhotoID returns the photo ID of the first photo-bearing message
-// visible in the current viewport, or 0 if none is visible.
-func (ml *MessageList) LastVisiblePhotoID() int64 {
-	linesUsed := 0
-	for i := ml.viewStart; i < len(ml.items) && linesUsed < ml.viewHeight; i++ {
-		if ml.items[i].kind == itemMessage {
-			msg := ml.items[i].msg
-			if msg.Photo != nil && msg.Photo.ID != 0 {
-				return msg.Photo.ID
-			}
-		}
-		linesUsed += ml.itemHeight(i)
-	}
-	return 0
-}
-
 // ScrollToFirstUnread positions the viewport at the first message with ID > readMaxID.
 // If the remaining messages don't fill the viewport, older messages are pulled in to
 // fill the space (same as positionAtBottom), keeping the first unread visible.
@@ -503,6 +487,13 @@ func (ml *MessageList) SelectedMessageIsOut() bool {
 func (ml *MessageList) SelectedMessageReplyToMsgID() int {
 	if msg := ml.computeSelectedMsg(); msg != nil {
 		return msg.ReplyToMsgID
+	}
+	return 0
+}
+
+func (ml *MessageList) SelectedMessagePhotoID() int64 {
+	if msg := ml.computeSelectedMsg(); msg != nil && msg.Photo != nil {
+		return msg.Photo.ID
 	}
 	return 0
 }
