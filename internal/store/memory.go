@@ -111,6 +111,19 @@ func (s *memoryStore) UpdateMessageText(chatID int64, msgID int, text string, ed
 	}
 }
 
+func (s *memoryStore) UpdateMessageReactions(chatID int64, msgID int, reactions []Reaction) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i := range s.messages[chatID] {
+		if s.messages[chatID][i].ID == msgID {
+			cp := make([]Reaction, len(reactions))
+			copy(cp, reactions)
+			s.messages[chatID][i].Reactions = cp
+			return
+		}
+	}
+}
+
 func (s *memoryStore) RemoveMessage(chatID int64, msgID int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

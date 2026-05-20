@@ -135,3 +135,37 @@ func TestMemory_RemoveMessage_NoopWhenMissing(t *testing.T) {
 	})
 	assert.Len(t, s.Messages(5), 1)
 }
+
+func TestMemory_UpdateMessageReactions_SetsReactions(t *testing.T) {
+	s := store.NewMemory()
+	s.AppendMessage(store.Message{ID: 1, ChatID: 5, Text: "hi"})
+	reactions := []store.Reaction{
+		{Emoji: "❤️", Count: 3, IsChosen: true},
+		{Emoji: "👍", Count: 1, IsChosen: false},
+	}
+	s.UpdateMessageReactions(5, 1, reactions)
+	msgs := s.Messages(5)
+	require.Len(t, msgs, 1)
+	assert.Equal(t, reactions, msgs[0].Reactions)
+}
+
+func TestMemory_UpdateMessageReactions_NoopWhenMissing(t *testing.T) {
+	s := store.NewMemory()
+	s.AppendMessage(store.Message{ID: 1, ChatID: 5, Text: "hi"})
+	assert.NotPanics(t, func() {
+		s.UpdateMessageReactions(5, 999, []store.Reaction{{Emoji: "👍", Count: 1}})
+	})
+	msgs := s.Messages(5)
+	assert.Empty(t, msgs[0].Reactions)
+}
+
+func TestMemory_UpdateMessageReactions_ReplacesExisting(t *testing.T) {
+	s := store.NewMemory()
+	s.AppendMessage(store.Message{ID: 1, ChatID: 5, Text: "hi",
+		Reactions: []store.Reaction{{Emoji: "👍", Count: 2}},
+	})
+	s.UpdateMessageReactions(5, 1, []store.Reaction{{Emoji: "❤️", Count: 1}})
+	msgs := s.Messages(5)
+	require.Len(t, msgs[0].Reactions, 1)
+	assert.Equal(t, "❤️", msgs[0].Reactions[0].Emoji)
+}

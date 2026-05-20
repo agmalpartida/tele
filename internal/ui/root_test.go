@@ -47,6 +47,9 @@ func (m *mockTGClient) EditMessage(_ context.Context, _ store.Peer, _ int, _ str
 func (m *mockTGClient) DeleteMessages(_ context.Context, _ store.Peer, _ []int, _ bool) error {
 	return nil
 }
+func (m *mockTGClient) SendReaction(_ context.Context, _ store.Peer, _ int, _ string) error {
+	return nil
+}
 func (m *mockTGClient) Updates() <-chan store.Event { return make(chan store.Event) }
 
 var _ internaltg.Client = (*mockTGClient)(nil)

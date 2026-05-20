@@ -22,6 +22,12 @@ func (p Peer) IsGroup() bool      { return p.Type == PeerGroup || p.Type == Peer
 func (p Peer) IsChannel() bool    { return p.Type == PeerChannel }
 func (p Peer) IsSuperGroup() bool { return p.Type == PeerSuperGroup }
 
+type Reaction struct {
+	Emoji    string
+	Count    int
+	IsChosen bool
+}
+
 type MessageEntity struct {
 	Type   string // "bold", "italic", "code", "pre" — UTF-16 offsets (Telegram encoding)
 	Offset int
@@ -84,6 +90,7 @@ type Message struct {
 	Photo        *PhotoRef  // nil if message has no photo
 	ReplyToMsgID int        // 0 if not a reply
 	EditDate     *time.Time // nil if not edited
+	Reactions    []Reaction
 }
 
 type EventKind int
@@ -92,6 +99,7 @@ const (
 	EventNewMessage EventKind = iota
 	EventReadInbox
 	EventReadOutbox
+	EventReactionsUpdate
 )
 
 type Event struct {
@@ -99,4 +107,6 @@ type Event struct {
 	Message   Message
 	ChatID    int64
 	ReadMaxID int
+	MsgID     int
+	Reactions []Reaction
 }

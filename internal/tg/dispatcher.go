@@ -55,6 +55,24 @@ func setupDispatcher(dispatcher *tg.UpdateDispatcher, events chan<- store.Event,
 		return nil
 	})
 
+	dispatcher.OnMessageReactions(func(ctx context.Context, e tg.Entities, upd *tg.UpdateMessageReactions) error {
+		chatID := peerIDFromPeer(upd.Peer)
+		if chatID == 0 {
+			return nil
+		}
+		reactions := convertReactions(upd.Reactions)
+		select {
+		case events <- store.Event{
+			Kind:      store.EventReactionsUpdate,
+			ChatID:    chatID,
+			MsgID:     upd.MsgID,
+			Reactions: reactions,
+		}:
+		default:
+		}
+		return nil
+	})
+
 	// OnReadHistoryOutbox / OnReadChannelOutbox are NOT registered here.
 	// They are intercepted before pts-tracking in outboxHook (see client.go),
 	// because pts gaps cause updates.Manager to silently drop these events.

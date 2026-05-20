@@ -11,6 +11,7 @@ type Store interface {
 	AppendMessage(msg Message)
 	UpdateMessageID(chatID int64, oldID, newID int)
 	UpdateMessageText(chatID int64, msgID int, text string, editDate time.Time)
+	UpdateMessageReactions(chatID int64, msgID int, reactions []Reaction)
 	RemoveMessage(chatID int64, msgID int)
 	UpdateChatReadMaxID(chatID int64, maxID int)
 	UpdateChatOutboxReadMaxID(chatID int64, maxID int)

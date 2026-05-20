@@ -28,6 +28,11 @@ type ReplyMsgRequest struct {
 	MsgID int
 }
 
+// ReactMsgRequest is emitted when the user opens the reaction picker for a message.
+type ReactMsgRequest struct {
+	MsgID int
+}
+
 // EditMsgRequest is emitted when the user activates edit for a message.
 type EditMsgRequest struct {
 	MsgID int
@@ -187,7 +192,10 @@ func (cm *ContextMenu) execute() (*ContextMenu, tea.Cmd) {
 	case keys.ActionEdit:
 		msgID := cm.msgID
 		return nil, func() tea.Msg { return EditMsgRequest{MsgID: msgID} }
-	case keys.ActionReact, keys.ActionCancel:
+	case keys.ActionReact:
+		msgID := cm.msgID
+		return nil, func() tea.Msg { return ReactMsgRequest{MsgID: msgID} }
+	case keys.ActionCancel:
 		return nil, func() tea.Msg { return CloseContextMenuMsg{} }
 	case keys.ActionDelete:
 		if !cm.isOut {

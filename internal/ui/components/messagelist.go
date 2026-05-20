@@ -3,6 +3,7 @@ package components
 import (
 	"image"
 	"image/color"
+	"strconv"
 	"strings"
 	"time"
 
@@ -66,6 +67,23 @@ func buildItems(msgs []store.Message) []listItem {
 		items = append(items, listItem{kind: itemMessage, msg: msg})
 	}
 	return items
+}
+
+func buildReactStr(reactions []store.Reaction) string {
+	if len(reactions) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(reactions))
+	for _, r := range reactions {
+		s := r.Emoji + " " + strconv.Itoa(r.Count)
+		if r.IsChosen {
+			parts = append(parts, readStyle.Render(s))
+		} else {
+			parts = append(parts, tsStyle.Render(s))
+		}
+	}
+	sep := tsStyle.Render(" · ")
+	return " " + strings.Join(parts, sep) + " "
 }
 
 const indicatorChar = "┃"
@@ -140,6 +158,18 @@ func (ml *MessageList) SetSize(width, height int) {
 func (ml *MessageList) SetMessages(msgs []store.Message) {
 	ml.items = buildItems(msgs)
 	ml.viewStart, ml.lineOffset = ml.positionAtBottom()
+}
+
+// SetMessagesKeepScroll replaces the message list without resetting the scroll position.
+// Use for in-place data updates (e.g. reactions) where the message count is unchanged.
+func (ml *MessageList) SetMessagesKeepScroll(msgs []store.Message) {
+	vs, lo := ml.viewStart, ml.lineOffset
+	ml.items = buildItems(msgs)
+	if vs >= len(ml.items) {
+		vs = max(0, len(ml.items)-1)
+		lo = 0
+	}
+	ml.viewStart, ml.lineOffset = vs, lo
 }
 
 // RemoveMessage removes the message with the given ID while preserving scroll position.
@@ -621,6 +651,12 @@ func (ml *MessageList) renderMessage(msg store.Message, selected bool) []string 
 		innerW = tsW
 		actualW = innerW - 2
 	}
+	reactStr := buildReactStr(msg.Reactions)
+	reactW := lipgloss.Width(reactStr)
+	if innerW < reactW+tsW+1 {
+		innerW = reactW + tsW + 1
+		actualW = innerW - 2
+	}
 
 	// Ensure bubble is wide enough for the sender name in the top border.
 	// rightFill = innerW - titleW - 1 must be >= 0, so innerW >= titleW + 1.
@@ -661,12 +697,12 @@ func (ml *MessageList) renderMessage(msg store.Message, selected bool) []string 
 		top = bs.Render(b.TopLeft + strings.Repeat(b.Top, innerW) + b.TopRight)
 	}
 
-	// Bottom border: timestamp right-aligned.
-	tsLeftFill := innerW - tsW
-	if tsLeftFill < 0 {
-		tsLeftFill = 0
+	// Bottom border: reactions left, timestamp right.
+	fillW := innerW - reactW - tsW
+	if fillW < 0 {
+		fillW = 0
 	}
-	bottom := bs.Render(b.BottomLeft+strings.Repeat(b.Bottom, tsLeftFill)) + tsStr + bs.Render(b.BottomRight)
+	bottom := bs.Render(b.BottomLeft) + reactStr + bs.Render(strings.Repeat(b.Bottom, fillW)) + tsStr + bs.Render(b.BottomRight)
 
 	// Content lines: quote block (if reply), photo art (if any), then text.
 	var sideLines []string

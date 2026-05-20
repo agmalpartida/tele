@@ -650,3 +650,30 @@ func TestMessageList_DateSeparator_PreviousYearWithYear(t *testing.T) {
 	view := stripANSI(ml.View())
 	assert.Contains(t, view, "March 7, 2025")
 }
+
+func TestMessageList_ReactionsRenderedOnBottomBorder(t *testing.T) {
+	ml := components.NewMessageList(20, 80)
+	now := time.Now()
+	ml.SetMessages([]store.Message{
+		{ID: 1, ChatID: 1, Text: "hello", Date: now, IsOut: false,
+			Reactions: []store.Reaction{
+				{Emoji: "❤️", Count: 3, IsChosen: false},
+				{Emoji: "👍", Count: 1, IsChosen: false},
+			}},
+	})
+	v := ml.View()
+	assert.Contains(t, v, "❤️")
+	assert.Contains(t, v, "3")
+	assert.Contains(t, v, "·")
+	assert.Contains(t, v, "👍")
+}
+
+func TestMessageList_NoReactions_NoSeparator(t *testing.T) {
+	ml := components.NewMessageList(20, 80)
+	now := time.Now()
+	ml.SetMessages([]store.Message{
+		{ID: 1, ChatID: 1, Text: "hello", Date: now, IsOut: false},
+	})
+	v := ml.View()
+	assert.NotContains(t, v, "·")
+}

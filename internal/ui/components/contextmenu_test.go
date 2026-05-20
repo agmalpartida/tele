@@ -143,14 +143,16 @@ func TestContextMenu_Reply_EmitsReplyMsgRequest(t *testing.T) {
 	assert.Equal(t, 42, req.MsgID)
 }
 
-func TestContextMenu_ReactStub_Closes(t *testing.T) {
+func TestContextMenu_React_EmitsReactMsgRequestViaEnter(t *testing.T) {
 	cm := components.NewContextMenu(42, false, 0, defaultKM())
 	cm, _ = cm.Update(pressJ())
 	require.NotNil(t, cm)
 	newCM, cmd := cm.Update(pressEnter())
 	assert.Nil(t, newCM)
 	require.NotNil(t, cmd)
-	assert.IsType(t, components.CloseContextMenuMsg{}, cmd())
+	req, ok := cmd().(components.ReactMsgRequest)
+	require.True(t, ok)
+	assert.Equal(t, 42, req.MsgID)
 }
 
 func TestContextMenu_Edit_EmitsEditMsgRequest(t *testing.T) {
@@ -345,6 +347,7 @@ func TestContextMenu_View_ReturnsNonEmpty(t *testing.T) {
 }
 
 func pressG() tea.KeyPressMsg { return keyMsg('g') }
+func pressT() tea.KeyPressMsg { return keyMsg('t') }
 
 func TestNewContextMenu_IsReply_ShowsJumpToOriginal(t *testing.T) {
 	cm := components.NewContextMenu(1, false, 42, defaultKM())
@@ -356,6 +359,29 @@ func TestNewContextMenu_NotReply_NoJumpToOriginal(t *testing.T) {
 	cm := components.NewContextMenu(1, false, 0, defaultKM())
 	view := cm.View()
 	assert.NotContains(t, view, "Jump to original")
+}
+
+func TestContextMenu_React_EmitsReactMsgRequest(t *testing.T) {
+	cm := components.NewContextMenu(42, false, 0, defaultKM())
+	// items: Reply, React — cursor on React after one J
+	cm, _ = cm.Update(pressJ())
+	require.NotNil(t, cm)
+	newCM, cmd := cm.Update(pressEnter())
+	assert.Nil(t, newCM)
+	require.NotNil(t, cmd)
+	req, ok := cmd().(components.ReactMsgRequest)
+	require.True(t, ok)
+	assert.Equal(t, 42, req.MsgID)
+}
+
+func TestContextMenu_DirectKey_T_EmitsReactMsgRequest(t *testing.T) {
+	cm := components.NewContextMenu(42, false, 0, defaultKM())
+	newCM, cmd := cm.Update(pressT())
+	assert.Nil(t, newCM)
+	require.NotNil(t, cmd)
+	req, ok := cmd().(components.ReactMsgRequest)
+	require.True(t, ok)
+	assert.Equal(t, 42, req.MsgID)
 }
 
 func TestContextMenu_JumpToOriginal_EmitsJumpToMsgRequest(t *testing.T) {

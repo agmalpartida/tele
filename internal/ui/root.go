@@ -65,6 +65,12 @@ type historyChunkMsg struct {
 	messages []store.Message
 }
 
+type reactionFailedMsg struct {
+	chatID    int64
+	msgID     int
+	reactions []store.Reaction
+}
+
 type FolderFiltersMsg struct {
 	Filters []store.FolderFilter
 }
@@ -91,6 +97,8 @@ type RootModel struct {
 	nextSentinel       int
 	chatListPendingKey string
 	contextMenu        *components.ContextMenu
+	reactionPicker     *components.ReactionPicker
+	reactionTargetID   int
 	folderBar          *screens.FoldersModel
 	activeFilter       *store.FolderFilter
 	logo               components.LogoLoader
@@ -137,7 +145,8 @@ func (m RootModel) WithFocus(f Focus) RootModel {
 }
 
 func (m RootModel) SearchActive() bool    { return m.searchModel != nil }
-func (m RootModel) ContextMenuOpen() bool { return m.contextMenu != nil }
+func (m RootModel) ContextMenuOpen() bool    { return m.contextMenu != nil }
+func (m RootModel) ReactionPickerOpen() bool { return m.reactionPicker != nil }
 
 // SetLoginModel injects the login model after NewRootModel (called by app.go).
 func (m *RootModel) SetLoginModel(lm screens.LoginModel) {
@@ -382,6 +391,11 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.chat.SetOutboxReadMaxID(chat.ReadOutboxMaxID)
 				}
 			}
+		case store.EventReactionsUpdate:
+			m.st.UpdateMessageReactions(msg.ChatID, msg.MsgID, msg.Reactions)
+			if msg.ChatID == m.currentChatID {
+				m.chat.SetMessagesKeepScroll(m.st.Messages(m.currentChatID))
+			}
 		}
 		return m, nil
 
@@ -465,6 +479,85 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.contextMenu = nil
 		return m, nil
 
+	case components.ReactMsgRequest:
+		m.contextMenu = nil
+		if m.st == nil {
+			return m, nil
+		}
+		var chosen string
+		for _, sm := range m.st.Messages(m.currentChatID) {
+			if sm.ID == msg.MsgID {
+				for _, r := range sm.Reactions {
+					if r.IsChosen {
+						chosen = r.Emoji
+						break
+					}
+				}
+				break
+			}
+		}
+		m.reactionTargetID = msg.MsgID
+		m.reactionPicker = components.NewReactionPicker(chosen)
+		return m, nil
+
+	case components.CloseReactionPickerMsg:
+		m.reactionPicker = nil
+		return m, nil
+
+	case reactionFailedMsg:
+		if m.st != nil {
+			m.st.UpdateMessageReactions(msg.chatID, msg.msgID, msg.reactions)
+			if msg.chatID == m.currentChatID {
+				m.chat.SetMessagesKeepScroll(m.st.Messages(m.currentChatID))
+			}
+		}
+		return m, nil
+
+	case components.ReactConfirmedMsg:
+		m.reactionPicker = nil
+		if m.st == nil || m.tgClient == nil {
+			return m, nil
+		}
+		chatID := m.currentChatID
+		msgID := m.reactionTargetID
+		emoji := msg.Emoji
+		currentReactions := m.st.Messages(chatID)
+		var msgReactions []store.Reaction
+		for _, sm := range currentReactions {
+			if sm.ID == msgID {
+				msgReactions = sm.Reactions
+				break
+			}
+		}
+		alreadyChosen := false
+		for _, r := range msgReactions {
+			if r.Emoji == emoji && r.IsChosen {
+				alreadyChosen = true
+				break
+			}
+		}
+		sendEmoji := emoji
+		if alreadyChosen {
+			sendEmoji = ""
+		}
+		origReactions := make([]store.Reaction, len(msgReactions))
+		copy(origReactions, msgReactions)
+		newReactions := buildOptimisticReactions(msgReactions, emoji)
+		m.st.UpdateMessageReactions(chatID, msgID, newReactions)
+		m.chat.SetMessagesKeepScroll(m.st.Messages(chatID))
+		chat, ok := m.st.GetChat(chatID)
+		if !ok {
+			return m, nil
+		}
+		client := m.tgClient
+		peer := chat.Peer
+		return m, func() tea.Msg {
+			if err := client.SendReaction(context.Background(), peer, msgID, sendEmoji); err != nil {
+				return reactionFailedMsg{chatID: chatID, msgID: msgID, reactions: origReactions}
+			}
+			return nil
+		}
+
 	case components.DeleteMsgRequest:
 		m.contextMenu = nil
 		if m.st == nil {
@@ -526,6 +619,11 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m RootModel) handleMainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.statusBar.SetStatus("")
+	if m.reactionPicker != nil {
+		newPicker, cmd := m.reactionPicker.Update(msg)
+		m.reactionPicker = newPicker
+		return m, cmd
+	}
 	// While context menu is open, route all keys to it.
 	if m.contextMenu != nil {
 		newCM, cmd := m.contextMenu.Update(msg)
@@ -776,6 +874,45 @@ func (m *RootModel) activateEdit(msgID int) tea.Cmd {
 	return nil
 }
 
+func buildOptimisticReactions(current []store.Reaction, emoji string) []store.Reaction {
+	alreadyChosen := false
+	for _, r := range current {
+		if r.Emoji == emoji && r.IsChosen {
+			alreadyChosen = true
+			break
+		}
+	}
+	out := make([]store.Reaction, 0, len(current)+1)
+	emojiFound := false
+	for _, r := range current {
+		nr := r
+		if r.Emoji == emoji {
+			emojiFound = true
+			if alreadyChosen {
+				nr.IsChosen = false
+				nr.Count--
+				if nr.Count <= 0 {
+					continue
+				}
+			} else {
+				nr.IsChosen = true
+				nr.Count++
+			}
+		} else if r.IsChosen {
+			nr.IsChosen = false
+			nr.Count--
+			if nr.Count <= 0 {
+				continue
+			}
+		}
+		out = append(out, nr)
+	}
+	if !alreadyChosen && !emojiFound && emoji != "" {
+		out = append(out, store.Reaction{Emoji: emoji, Count: 1, IsChosen: true})
+	}
+	return out
+}
+
 func (m RootModel) focusPrev() (tea.Model, tea.Cmd) {
 	hasFolders := m.folderBar != nil && m.folderBar.HasFolders()
 	switch m.focus {
@@ -914,6 +1051,9 @@ func (m RootModel) View() tea.View {
 		}
 		if m.contextMenu != nil {
 			content = overlayBottomRight(content, m.contextMenu.View(), m.width, m.height, m.chat.ComposerHeight()+1)
+		}
+		if m.reactionPicker != nil {
+			content = overlayBottomRight(content, m.reactionPicker.View(), m.width, m.height, m.chat.ComposerHeight()+1)
 		}
 	}
 	v := tea.NewView(content)

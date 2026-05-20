@@ -158,6 +158,34 @@ func (c *GotdClient) EditMessage(ctx context.Context, peer store.Peer, msgID int
 	})
 }
 
+func (c *GotdClient) SendReaction(ctx context.Context, peer store.Peer, msgID int, emoji string) error {
+	c.mu.RLock()
+	api := c.api
+	c.mu.RUnlock()
+	if api == nil {
+		return fmt.Errorf("not connected")
+	}
+	c.log.Debug("SendReaction", zap.Int64("peer_id", peer.ID), zap.Int("msg_id", msgID), zap.String("emoji", emoji))
+	return WithRetry(ctx, func() error {
+		_, err := api.MessagesSendReaction(ctx, &tg.MessagesSendReactionRequest{
+			Peer:     peerToInput(peer),
+			MsgID:    msgID,
+			Reaction: buildReactionArg(emoji),
+		})
+		if err != nil {
+			c.log.Error("MessagesSendReaction failed", zap.Int64("peer_id", peer.ID), zap.Error(err))
+		}
+		return err
+	})
+}
+
+func buildReactionArg(emoji string) []tg.ReactionClass {
+	if emoji == "" {
+		return []tg.ReactionClass{} // empty vector = remove reaction
+	}
+	return []tg.ReactionClass{&tg.ReactionEmoji{Emoticon: emoji}}
+}
+
 func peerToInput(p store.Peer) tg.InputPeerClass {
 	switch p.Type {
 	case store.PeerUser:
@@ -264,6 +292,9 @@ func convertMessage(raw tg.MessageClass, chatID int64) (store.Message, bool) {
 		t := time.Unix(int64(msg.EditDate), 0)
 		out.EditDate = &t
 	}
+	if msg.Reactions.Results != nil {
+		out.Reactions = convertReactions(msg.Reactions)
+	}
 	if media, ok := msg.Media.(*tg.MessageMediaPhoto); ok {
 		if photo, ok := media.Photo.(*tg.Photo); ok && len(photo.Sizes) > 0 {
 			thumb := pickThumbSize(photo.Sizes)
@@ -295,6 +326,23 @@ func extractSentMessageID(updates tg.UpdatesClass, randomID int64) int {
 		}
 	}
 	return 0
+}
+
+func convertReactions(mr tg.MessageReactions) []store.Reaction {
+	out := make([]store.Reaction, 0, len(mr.Results))
+	for _, rc := range mr.Results {
+		emoji, ok := rc.Reaction.(*tg.ReactionEmoji)
+		if !ok {
+			continue
+		}
+		_, isChosen := rc.GetChosenOrder()
+		out = append(out, store.Reaction{
+			Emoji:    emoji.Emoticon,
+			Count:    rc.Count,
+			IsChosen: isChosen,
+		})
+	}
+	return out
 }
 
 func convertEntities(entities []tg.MessageEntityClass) []store.MessageEntity {
