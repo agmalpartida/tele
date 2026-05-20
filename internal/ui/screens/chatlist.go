@@ -19,6 +19,7 @@ var (
 	selectedChatStyle = lipgloss.NewStyle().Background(lipgloss.Color("63")).Foreground(lipgloss.Color("0"))
 	normalChatStyle   = lipgloss.NewStyle()
 	activeChatStyle   = lipgloss.NewStyle().Bold(true)
+	onlineDotStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 )
 
 func formatUnread(count int) string {
@@ -214,8 +215,8 @@ func (m *ChatListModel) View() string {
 	if w < 1 {
 		w = 1
 	}
-	// Subtract 1 for outer container safety and 2 for the selection prefix ("▶ " or "  ").
-	const prefixW = 2
+	// Subtract 1 for outer container safety and 4 for the selection + presence prefix.
+	const prefixW = 4
 	inner := w - 1 - prefixW
 	if inner < 1 {
 		inner = 1
@@ -226,9 +227,17 @@ func (m *ChatListModel) View() string {
 		badge := formatUnread(m.chats[i].UnreadCount)
 		title := m.chats[i].Title
 
-		prefix := "  "
+		prefix := "    "
 		if i == m.activeIdx {
-			prefix = "▶ "
+			prefix = "▶   "
+		}
+		if m.chats[i].Peer.IsUser() && m.chats[i].Online {
+			dot := onlineDotStyle.Render("●")
+			if i == m.activeIdx {
+				prefix = "▶ " + dot + " "
+			} else {
+				prefix = "  " + dot + " "
+			}
 		}
 
 		var content string

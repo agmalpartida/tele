@@ -89,6 +89,15 @@ func setupDispatcher(dispatcher *tg.UpdateDispatcher, events chan<- store.Event,
 		return nil
 	})
 
+	dispatcher.OnUserStatus(func(ctx context.Context, e tg.Entities, upd *tg.UpdateUserStatus) error {
+		_, online := upd.Status.(*tg.UserStatusOnline)
+		select {
+		case events <- store.Event{Kind: store.EventUserPresence, ChatID: upd.UserID, Online: online}:
+		default:
+		}
+		return nil
+	})
+
 	// OnReadHistoryOutbox / OnReadChannelOutbox are NOT registered here.
 	// They are intercepted before pts-tracking in outboxHook (see client.go),
 	// because pts gaps cause updates.Manager to silently drop these events.

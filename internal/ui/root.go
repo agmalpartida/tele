@@ -421,6 +421,17 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.chat.SetMessages(m.st.Messages(m.currentChatID))
 			}
 			m.chatList.SetChats(m.filteredChats())
+		case store.EventUserPresence:
+			m.st.UpdateChatOnline(msg.ChatID, msg.Online)
+			m.chatList.SetChats(m.filteredChats())
+			if m.folderBar != nil {
+				m.folderBar.SetUnreadCounts(m.computeFolderUnreads())
+			}
+			if msg.ChatID == m.currentChatID {
+				if chat, ok := m.st.GetChat(msg.ChatID); ok {
+					m.chat.SetChat(&chat)
+				}
+			}
 		}
 		return m, nil
 
@@ -1021,7 +1032,7 @@ func (m RootModel) View() tea.View {
 			innerW := loginContentW + 2*loginPadH
 			innerH := loginContentH + 2*loginPadV
 			padded := lipgloss.NewStyle().Padding(loginPadV, loginPadH).Render(loginContent)
-			loginBox := components.RenderBox(padded, "Telegram", "", b, nil, innerW+2, innerH+2)
+			loginBox := components.RenderBox(padded, "Telegram", "", "", b, nil, innerW+2, innerH+2)
 			combined := lipgloss.JoinVertical(lipgloss.Center, logoView, "\n", loginBox)
 			content = lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, combined)
 		}
@@ -1053,21 +1064,27 @@ func (m RootModel) View() tea.View {
 
 		chatListTitle := "[1] Chats"
 		chatTitle := "[2] " + m.chat.Title()
+		chatDot := ""
+		if m.currentChatID != 0 && m.st != nil {
+			if chat, ok := m.st.GetChat(m.currentChatID); ok && chat.Peer.IsUser() && chat.Online {
+				chatDot = lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Render("●")
+			}
+		}
 
 		var main string
 		if m.folderBar != nil && m.folderBar.HasFolders() {
 			const sidebarW = 18
 			_, chatlistW, chatW := layout.SplitThree(m.width, sidebarW, 0.30)
-			foldersView := components.RenderBox(m.folderBar.View(), "[0] Folders", "", foldersBorder, foldersFg, sidebarW, innerH)
-			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", chatListBorder, chatListFg, chatlistW, innerH)
-			chatView := components.RenderBox(m.chat.View(), chatTitle, "", chatBorder, chatFg, chatW, innerH)
+			foldersView := components.RenderBox(m.folderBar.View(), "[0] Folders", "", "", foldersBorder, foldersFg, sidebarW, innerH)
+			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", "", chatListBorder, chatListFg, chatlistW, innerH)
+			chatView := components.RenderBox(m.chat.View(), chatTitle, chatDot, "", chatBorder, chatFg, chatW, innerH)
 			main = lipgloss.JoinHorizontal(lipgloss.Top, foldersView, chatListView, chatView)
 		} else {
 			leftW, rightW := layout.SplitHorizontal(m.width, m.height, 0.30)
 			chatListWidth := leftW - 2*borderSize + 2
 			chatWidth := rightW - 2*borderSize + 2
-			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", chatListBorder, chatListFg, chatListWidth, innerH)
-			chatView := components.RenderBox(m.chat.View(), chatTitle, "", chatBorder, chatFg, chatWidth, innerH)
+			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", "", chatListBorder, chatListFg, chatListWidth, innerH)
+			chatView := components.RenderBox(m.chat.View(), chatTitle, chatDot, "", chatBorder, chatFg, chatWidth, innerH)
 			main = lipgloss.JoinHorizontal(lipgloss.Top, chatListView, chatView)
 		}
 

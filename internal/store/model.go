@@ -54,6 +54,7 @@ type Chat struct {
 	IsContact       bool
 	IsBot           bool
 	IsMuted         bool
+	Online          bool
 }
 
 type FolderFilter struct {
@@ -101,6 +102,7 @@ const (
 	EventReadOutbox
 	EventReactionsUpdate
 	EventDeleteMessages
+	EventUserPresence
 )
 
 type Event struct {
@@ -111,4 +113,5 @@ type Event struct {
 	MsgID     int
 	MsgIDs    []int
 	Reactions []Reaction
+	Online    bool
 }

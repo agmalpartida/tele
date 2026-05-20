@@ -184,3 +184,14 @@ func (s *memoryStore) UpdateChatOutboxReadMaxID(chatID int64, maxID int) {
 	chat.ReadOutboxMaxID = maxID
 	s.chats[chatID] = chat
 }
+
+func (s *memoryStore) UpdateChatOnline(userID int64, online bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	chat, ok := s.chats[userID]
+	if !ok {
+		return
+	}
+	chat.Online = online
+	s.chats[userID] = chat
+}

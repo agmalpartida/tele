@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/lipgloss/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/sorokin-vladimir/tele/internal/store"
@@ -207,4 +208,49 @@ func TestChatList_SelectedChat_ReturnsActiveItem(t *testing.T) {
 	chat, ok := m.SelectedChat()
 	require.True(t, ok)
 	assert.Equal(t, int64(2), chat.ID, "SelectedChat returns confirmed active item, not cursor")
+}
+
+func TestChatList_View_OnlineUserShowsDot(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetSize(40, 20)
+	m.SetChats([]store.Chat{
+		{ID: 1, Title: "Alice", Peer: store.Peer{Type: store.PeerUser}, Online: true},
+		{ID: 2, Title: "Bob", Peer: store.Peer{Type: store.PeerUser}, Online: false},
+	})
+	view := m.View()
+	assert.Contains(t, view, "●")
+}
+
+func TestChatList_View_OfflineUserNoDot(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetSize(40, 20)
+	m.SetChats([]store.Chat{
+		{ID: 1, Title: "Alice", Peer: store.Peer{Type: store.PeerUser}, Online: false},
+	})
+	view := m.View()
+	assert.NotContains(t, view, "●")
+}
+
+func TestChatList_View_GroupNoDot(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetSize(40, 20)
+	m.SetChats([]store.Chat{
+		{ID: 1, Title: "Team", Peer: store.Peer{Type: store.PeerGroup}, Online: true},
+	})
+	view := m.View()
+	assert.NotContains(t, view, "●")
+}
+
+func TestChatList_View_OnlineDotWidthConsistent(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetSize(30, 20)
+	m.SetChats([]store.Chat{
+		{ID: 1, Title: "Alice", Peer: store.Peer{Type: store.PeerUser}, Online: true},
+		{ID: 2, Title: "Bob", Peer: store.Peer{Type: store.PeerUser}, Online: false},
+	})
+	lines := strings.Split(m.View(), "\n")
+	require.GreaterOrEqual(t, len(lines), 2)
+	w0 := lipgloss.Width(lines[0])
+	w1 := lipgloss.Width(lines[1])
+	assert.Equal(t, w0, w1, "online and offline rows must have the same visual width")
 }

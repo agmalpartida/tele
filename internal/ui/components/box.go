@@ -9,12 +9,13 @@ import (
 
 var hintStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
 
-// RenderBox renders a bordered box with an optional top title and bottom hint.
-// w and h are outer dimensions (including 1-char border on each side).
-// Empty title or hint results in a plain border on that side.
+// RenderBox renders a bordered box with an optional top title, top suffix (right of title),
+// and bottom hint. w and h are outer dimensions (including 1-char border on each side).
+// topSuffix is a pre-styled string placed after the title in the top border, separated
+// by one border character and spaces on each side. Pass "" to omit.
 // bottomHint is rendered in a dim color.
 // borderFg sets the border foreground color; nil means no color.
-func RenderBox(content, topTitle, bottomHint string, b lipgloss.Border, borderFg color.Color, w, h int) string {
+func RenderBox(content, topTitle, topSuffix, bottomHint string, b lipgloss.Border, borderFg color.Color, w, h int) string {
 	innerW := w - 2
 	innerH := h - 2
 
@@ -30,7 +31,17 @@ func RenderBox(content, topTitle, bottomHint string, b lipgloss.Border, borderFg
 		titleW := lipgloss.Width(titleStr)
 		fillW := innerW - titleW
 		if fillW >= 2 {
-			top = cb(b.TopLeft+b.Top) + titleStr + cb(strings.Repeat(b.Top, fillW-1)+b.TopRight)
+			if topSuffix != "" {
+				suffixW := lipgloss.Width(topSuffix)
+				remaining := fillW - suffixW - 4
+				if remaining >= 0 {
+					top = cb(b.TopLeft+b.Top) + titleStr + cb(b.Top) + " " + topSuffix + " " + cb(strings.Repeat(b.Top, remaining)+b.TopRight)
+				} else {
+					top = cb(b.TopLeft+b.Top) + titleStr + cb(strings.Repeat(b.Top, fillW-1)+b.TopRight)
+				}
+			} else {
+				top = cb(b.TopLeft+b.Top) + titleStr + cb(strings.Repeat(b.Top, fillW-1)+b.TopRight)
+			}
 		} else {
 			top = cb(b.TopLeft + strings.Repeat(b.Top, innerW) + b.TopRight)
 		}

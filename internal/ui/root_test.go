@@ -729,3 +729,22 @@ func TestRoot_ContextMenu_NonPhotoMessage_HidesOpenInViewer(t *testing.T) {
 	require.True(t, m.ContextMenuOpen())
 	assert.NotContains(t, m.View().Content, "Open in viewer")
 }
+
+func TestRoot_EventUserPresence_UpdatesChatOnline(t *testing.T) {
+	st := store.NewMemory()
+	st.SetChat(store.Chat{ID: 1, Title: "Alice", Peer: store.Peer{ID: 1, Type: store.PeerUser}})
+	m := ui.NewRootModel(nil, st, 50, false)
+	m = m.WithScreen(ui.ScreenMain)
+	m.ChatList().SetChats(st.Chats())
+
+	newM, _ := m.Update(store.Event{
+		Kind:   store.EventUserPresence,
+		ChatID: 1,
+		Online: true,
+	})
+	_ = newM.(ui.RootModel)
+
+	chat, ok := st.GetChat(1)
+	require.True(t, ok)
+	assert.True(t, chat.Online)
+}

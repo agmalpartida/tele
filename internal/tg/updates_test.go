@@ -137,6 +137,56 @@ func TestSetupDispatcher_SuppressesID_ConsumeOnce(t *testing.T) {
 	}
 }
 
+func TestSetupDispatcher_UserStatusOnline_EmitsPresenceEvent(t *testing.T) {
+	events := make(chan store.Event, 1)
+	dispatcher := tg.NewUpdateDispatcher()
+	setupDispatcher(&dispatcher, events, func(int) bool { return false })
+
+	ctx := context.Background()
+	upd := &tg.UpdateUserStatus{
+		UserID: 42,
+		Status: &tg.UserStatusOnline{},
+	}
+	err := dispatcher.Handle(ctx, &tg.Updates{
+		Updates: []tg.UpdateClass{upd},
+	})
+	require.NoError(t, err)
+
+	select {
+	case evt := <-events:
+		assert.Equal(t, store.EventUserPresence, evt.Kind)
+		assert.Equal(t, int64(42), evt.ChatID)
+		assert.True(t, evt.Online)
+	case <-time.After(time.Second):
+		t.Fatal("no event received")
+	}
+}
+
+func TestSetupDispatcher_UserStatusOffline_EmitsPresenceEvent(t *testing.T) {
+	events := make(chan store.Event, 1)
+	dispatcher := tg.NewUpdateDispatcher()
+	setupDispatcher(&dispatcher, events, func(int) bool { return false })
+
+	ctx := context.Background()
+	upd := &tg.UpdateUserStatus{
+		UserID: 42,
+		Status: &tg.UserStatusOffline{},
+	}
+	err := dispatcher.Handle(ctx, &tg.Updates{
+		Updates: []tg.UpdateClass{upd},
+	})
+	require.NoError(t, err)
+
+	select {
+	case evt := <-events:
+		assert.Equal(t, store.EventUserPresence, evt.Kind)
+		assert.Equal(t, int64(42), evt.ChatID)
+		assert.False(t, evt.Online)
+	case <-time.After(time.Second):
+		t.Fatal("no event received")
+	}
+}
+
 func TestExtractPeerID(t *testing.T) {
 	cases := []struct {
 		name   string

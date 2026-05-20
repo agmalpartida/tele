@@ -179,6 +179,31 @@ func TestMemory_UpdateMessageReactions_NoopWhenMissing(t *testing.T) {
 	assert.Empty(t, msgs[0].Reactions)
 }
 
+func TestMemory_UpdateChatOnline_SetsOnline(t *testing.T) {
+	s := store.NewMemory()
+	s.SetChat(store.Chat{ID: 1, Title: "Alice"})
+	s.UpdateChatOnline(1, true)
+	chat, ok := s.GetChat(1)
+	assert.True(t, ok)
+	assert.True(t, chat.Online)
+}
+
+func TestMemory_UpdateChatOnline_SetsOffline(t *testing.T) {
+	s := store.NewMemory()
+	s.SetChat(store.Chat{ID: 1, Title: "Alice", Online: true})
+	s.UpdateChatOnline(1, false)
+	chat, ok := s.GetChat(1)
+	assert.True(t, ok)
+	assert.False(t, chat.Online)
+}
+
+func TestMemory_UpdateChatOnline_NoopWhenMissing(t *testing.T) {
+	s := store.NewMemory()
+	assert.NotPanics(t, func() {
+		s.UpdateChatOnline(999, true)
+	})
+}
+
 func TestMemory_UpdateMessageReactions_ReplacesExisting(t *testing.T) {
 	s := store.NewMemory()
 	s.AppendMessage(store.Message{ID: 1, ChatID: 5, Text: "hi",

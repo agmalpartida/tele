@@ -333,12 +333,14 @@ func convertUser(u *tg.User) (store.Chat, bool) {
 			name = fmt.Sprintf("User %d", u.ID)
 		}
 	}
+	_, isOnline := u.Status.(*tg.UserStatusOnline)
 	return store.Chat{
 		ID:        u.ID,
 		Title:     name,
 		Peer:      store.Peer{ID: u.ID, Type: store.PeerUser, AccessHash: u.AccessHash},
 		IsContact: u.Contact,
 		IsBot:     u.Bot,
+		Online:    isOnline,
 	}, true
 }
 
