@@ -174,5 +174,5 @@ func (m *SearchModel) View() string {
 
 	content := strings.Join(lines, "\n")
 	h := len(lines) + 2
-	return components.RenderBox(content, "", hint, lipgloss.RoundedBorder(), w, h)
+	return components.RenderBox(content, "", hint, lipgloss.RoundedBorder(), nil, w, h)
 }

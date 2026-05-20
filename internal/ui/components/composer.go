@@ -12,11 +12,12 @@ import (
 const maxComposerLines = 5
 
 type Composer struct {
-	ta           textarea.Model
-	replyPreview string
-	focused      bool
-	width        int
-	visualLines  int
+	ta              textarea.Model
+	replyPreview    string
+	focused         bool
+	width           int
+	visualLines     int
+	hasDarkBackground bool
 }
 
 func NewComposer(width int) *Composer {
@@ -48,6 +49,8 @@ func (c *Composer) Blur() {
 	c.focused = false
 	c.ta.Blur()
 }
+
+func (c *Composer) SetDarkBackground(isDark bool) { c.hasDarkBackground = isDark }
 
 func (c *Composer) Value() string { return c.ta.Value() }
 
@@ -121,7 +124,8 @@ func (c *Composer) View() string {
 		Border(lipgloss.RoundedBorder()).
 		Width(c.width - 2)
 	if c.focused {
-		style = style.BorderForeground(lipgloss.Color("12"))
+		fg := lipgloss.LightDark(c.hasDarkBackground)(lipgloss.Color("19"), lipgloss.Color("12"))
+		style = style.BorderForeground(fg)
 	}
 	return style.Render(content)
 }

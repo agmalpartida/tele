@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"image"
+	"image/color"
 	"image/jpeg"
 	"os"
 	"os/exec"
@@ -76,10 +77,11 @@ type FolderFiltersMsg struct {
 }
 
 type RootModel struct {
-	screen        Screen
-	focus         Focus
-	width         int
-	height        int
+	screen            Screen
+	focus             Focus
+	width             int
+	height            int
+	hasDarkBackground bool
 	chatList      *screens.ChatListModel
 	chat          *screens.ChatModel
 	login         screens.LoginModel
@@ -109,8 +111,9 @@ func NewRootModel(client internaltg.Client, st store.Store, historyLimit int, ve
 	sb := components.NewStatusBar(80)
 	sb.SetKeyMap(km)
 	return RootModel{
-		screen:       ScreenLogin,
-		focus:        FocusChatList,
+		screen:            ScreenLogin,
+		focus:             FocusChatList,
+		hasDarkBackground: true,
 		chatList:     screens.NewChatListModel(),
 		chat:         screens.NewChatModel(80, 24),
 		folderBar:    screens.NewFoldersModel(),
@@ -199,11 +202,17 @@ func (m RootModel) computeFolderUnreads() map[int]int {
 func (m RootModel) Init() tea.Cmd {
 	m.statusBar.SetVerbose(m.verbose)
 	m.statusBar.SetActivePane("chatlist")
-	return logoTickCmd()
+	return tea.Batch(logoTickCmd(), requestBGColorCmd())
 }
 
 func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.BackgroundColorMsg:
+		m.hasDarkBackground = msg.IsDark()
+		m.logo.SetDarkBackground(m.hasDarkBackground)
+		m.chat.SetDarkBackground(m.hasDarkBackground)
+		return m, bgColorPollCmd()
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -1015,7 +1024,7 @@ func (m RootModel) View() tea.View {
 			innerW := loginContentW + 2*loginPadH
 			innerH := loginContentH + 2*loginPadV
 			padded := lipgloss.NewStyle().Padding(loginPadV, loginPadH).Render(loginContent)
-			loginBox := components.RenderBox(padded, "Telegram", "", b, innerW+2, innerH+2)
+			loginBox := components.RenderBox(padded, "Telegram", "", b, nil, innerW+2, innerH+2)
 			combined := lipgloss.JoinVertical(lipgloss.Center, logoView, "\n", loginBox)
 			content = lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, combined)
 		}
@@ -1026,16 +1035,23 @@ func (m RootModel) View() tea.View {
 		activeBorder := lipgloss.DoubleBorder()
 		inactiveBorder := lipgloss.NormalBorder()
 
+		lightDark := lipgloss.LightDark(m.hasDarkBackground)
+		activeFg := lightDark(lipgloss.Color("22"), lipgloss.Color("10"))
+
 		foldersBorder := inactiveBorder
 		chatListBorder := inactiveBorder
 		chatBorder := inactiveBorder
+		var foldersFg, chatListFg, chatFg color.Color
 		switch m.focus {
 		case FocusFolders:
 			foldersBorder = activeBorder
+			foldersFg = activeFg
 		case FocusChatList:
 			chatListBorder = activeBorder
+			chatListFg = activeFg
 		case FocusChat:
 			chatBorder = activeBorder
+			chatFg = activeFg
 		}
 
 		chatListTitle := "[1] Chats"
@@ -1045,16 +1061,16 @@ func (m RootModel) View() tea.View {
 		if m.folderBar != nil && m.folderBar.HasFolders() {
 			const sidebarW = 18
 			_, chatlistW, chatW := layout.SplitThree(m.width, sidebarW, 0.30)
-			foldersView := components.RenderBox(m.folderBar.View(), "[0] Folders", "", foldersBorder, sidebarW, innerH)
-			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", chatListBorder, chatlistW, innerH)
-			chatView := components.RenderBox(m.chat.View(), chatTitle, "", chatBorder, chatW, innerH)
+			foldersView := components.RenderBox(m.folderBar.View(), "[0] Folders", "", foldersBorder, foldersFg, sidebarW, innerH)
+			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", chatListBorder, chatListFg, chatlistW, innerH)
+			chatView := components.RenderBox(m.chat.View(), chatTitle, "", chatBorder, chatFg, chatW, innerH)
 			main = lipgloss.JoinHorizontal(lipgloss.Top, foldersView, chatListView, chatView)
 		} else {
 			leftW, rightW := layout.SplitHorizontal(m.width, m.height, 0.30)
 			chatListWidth := leftW - 2*borderSize + 2
 			chatWidth := rightW - 2*borderSize + 2
-			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", chatListBorder, chatListWidth, innerH)
-			chatView := components.RenderBox(m.chat.View(), chatTitle, "", chatBorder, chatWidth, innerH)
+			chatListView := components.RenderBox(m.chatList.View(), chatListTitle, "", chatListBorder, chatListFg, chatListWidth, innerH)
+			chatView := components.RenderBox(m.chat.View(), chatTitle, "", chatBorder, chatFg, chatWidth, innerH)
 			main = lipgloss.JoinHorizontal(lipgloss.Top, chatListView, chatView)
 		}
 
@@ -1077,6 +1093,16 @@ func (m RootModel) View() tea.View {
 func logoTickCmd() tea.Cmd {
 	return tea.Tick(80*time.Millisecond, func(time.Time) tea.Msg {
 		return components.LogoTickMsg{}
+	})
+}
+
+func requestBGColorCmd() tea.Cmd {
+	return func() tea.Msg { return tea.RequestBackgroundColor() }
+}
+
+func bgColorPollCmd() tea.Cmd {
+	return tea.Tick(2*time.Second, func(time.Time) tea.Msg {
+		return tea.RequestBackgroundColor()
 	})
 }
 

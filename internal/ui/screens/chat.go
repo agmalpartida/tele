@@ -102,6 +102,11 @@ func (m *ChatModel) ScrollToMessage(id int) bool       { return m.msgList.Scroll
 func (m *ChatModel) ReplyToMsgID() int { return m.replyToMsgID }
 func (m *ChatModel) EditMsgID() int    { return m.editMsgID }
 
+func (m *ChatModel) SetDarkBackground(isDark bool) {
+	m.composer.SetDarkBackground(isDark)
+	m.logo.SetDarkBackground(isDark)
+}
+
 func (m *ChatModel) clearPendingAction() {
 	if m.editMsgID != 0 {
 		m.composer.Reset()

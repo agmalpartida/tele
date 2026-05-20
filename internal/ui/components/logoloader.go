@@ -46,7 +46,8 @@ type logoColorStop struct {
 	r, g, b uint8
 }
 
-var logoPalette = []logoColorStop{
+// logoPaletteLight: dark blues for light terminal backgrounds.
+var logoPaletteLight = []logoColorStop{
 	{0.00, 14, 18, 40},
 	{0.30, 38, 65, 129},
 	{0.60, 88, 136, 208},
@@ -54,14 +55,24 @@ var logoPalette = []logoColorStop{
 	{1.00, 198, 228, 255},
 }
 
+// logoPaletteDark: bright blues for dark terminal backgrounds.
+var logoPaletteDark = []logoColorStop{
+	{0.00, 60, 90, 160},
+	{0.30, 90, 135, 210},
+	{0.60, 130, 170, 230},
+	{0.85, 175, 210, 248},
+	{1.00, 215, 238, 255},
+}
+
 // LogoLoader renders the animated "tele" ASCII logo with a sweeping wave.
 // Construct with NewLogoLoader. Call Tick() on each LogoTickMsg from root.
 type LogoLoader struct {
-	state   LogoLoaderState
-	elapsed int // ms since cycle start
-	width   int
-	grid    [5][]cellKind
-	cols    int
+	state             LogoLoaderState
+	elapsed           int // ms since cycle start
+	width             int
+	grid              [5][]cellKind
+	cols              int
+	hasDarkBackground bool
 }
 
 func NewLogoLoader(termWidth int) LogoLoader {
@@ -141,6 +152,8 @@ func buildLogoGrid() [5][]cellKind {
 // SetState freezes (LogoStateStatic) or resumes (LogoStateAnimating) the wave.
 func (l *LogoLoader) SetState(s LogoLoaderState) { l.state = s }
 
+func (l *LogoLoader) SetDarkBackground(isDark bool) { l.hasDarkBackground = isDark }
+
 // SetWidth updates the terminal width used to choose art vs narrow fallback.
 func (l *LogoLoader) SetWidth(w int) { l.width = w }
 
@@ -155,8 +168,7 @@ func (l *LogoLoader) Tick() {
 	}
 }
 
-func logoInterpolateColor(intensity float64) (r, g, b uint8) {
-	pal := logoPalette
+func logoInterpolateColor(intensity float64, pal []logoColorStop) (r, g, b uint8) {
 	for i := 0; i < len(pal)-1; i++ {
 		lo, hi := pal[i], pal[i+1]
 		if intensity >= lo.pos && intensity <= hi.pos {
@@ -228,6 +240,11 @@ func (l LogoLoader) View() string {
 		runes[r] = row
 	}
 
+	pal := logoPaletteLight
+	if l.hasDarkBackground {
+		pal = logoPaletteDark
+	}
+
 	var sb strings.Builder
 	for r := range logoArt {
 		for c := 0; c < l.cols; c++ {
@@ -243,14 +260,14 @@ func (l LogoLoader) View() string {
 			case cellBorder:
 				displayCh := logoBorderWaveChar(ch, t)
 				intensity := 0.14 + t*0.86
-				rv, gv, bv := logoInterpolateColor(intensity)
+				rv, gv, bv := logoInterpolateColor(intensity, pal)
 				fmt.Fprintf(&sb, "\x1b[38;2;%d;%d;%dm%s\x1b[0m", rv, gv, bv, string(displayCh))
 			case cellInterior:
 				ic := logoInteriorWaveChar(t)
 				if ic == 0 {
 					sb.WriteByte(' ')
 				} else {
-					rv, gv, bv := logoInterpolateColor(t)
+					rv, gv, bv := logoInterpolateColor(t, pal)
 					fmt.Fprintf(&sb, "\x1b[38;2;%d;%d;%dm%s\x1b[0m", rv, gv, bv, string(ic))
 				}
 			}
