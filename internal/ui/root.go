@@ -188,13 +188,13 @@ func (m RootModel) computeFolderUnreads() map[int]int {
 		if f.ID == 0 {
 			continue
 		}
-		total := 0
+		chatsWithUnread := 0
 		for _, c := range chats {
-			if f.Matches(c) {
-				total += c.UnreadCount
+			if f.Matches(c) && c.UnreadCount > 0 {
+				chatsWithUnread++
 			}
 		}
-		counts[f.ID] = total
+		counts[f.ID] = chatsWithUnread
 	}
 	return counts
 }
