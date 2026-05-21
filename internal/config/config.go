@@ -18,9 +18,14 @@ type UIConfig struct {
 	HistoryLimit int    `mapstructure:"history_limit"`
 }
 
+type PhotosConfig struct {
+	EagerFullQuality bool `mapstructure:"eager_full_quality"`
+}
+
 type Config struct {
 	Telegram TelegramConfig `mapstructure:"telegram"`
 	UI       UIConfig       `mapstructure:"ui"`
+	Photos   PhotosConfig   `mapstructure:"photos"`
 }
 
 func Load(path string) (*Config, error) {

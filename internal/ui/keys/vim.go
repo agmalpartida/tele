@@ -92,6 +92,8 @@ func (vs *VimState) Process(key string) Action {
 		return ActionReply
 	case "e":
 		return ActionEdit
+	case "o":
+		return ActionOpenInViewer
 	}
 	return ActionNone
 }

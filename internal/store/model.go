@@ -39,7 +39,8 @@ type PhotoRef struct {
 	AccessHash    int64
 	FileReference []byte
 	DCID          int
-	ThumbSize     string // e.g. "m" (320px), "s" (100px)
+	ThumbSize     string // inline: "m" (320px) or best available
+	FullThumbSize string // full quality: best large size ("x"→800px, "y"→1280px, "w"→2560px)
 }
 
 type Chat struct {

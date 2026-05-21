@@ -88,6 +88,9 @@ ui:
   date_format: "15:04"
   history_limit: 50
   theme: default
+
+photos:
+  eager_full_quality: true  # download full resolution in background on chat open
 `
 
 func expandTilde(path string) string {

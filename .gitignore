@@ -20,4 +20,4 @@ GEMINI.md
 *.log
 
 # Dev build
-tele
+/tele

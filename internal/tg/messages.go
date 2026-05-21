@@ -294,6 +294,21 @@ func parseHistory(result tg.MessagesMessagesClass, chatID int64) []store.Message
 	return out
 }
 
+// pickFullThumbSize returns the largest available PhotoSize type for full-quality download.
+func pickFullThumbSize(sizes []tg.PhotoSizeClass) string {
+	best := ""
+	bestArea := 0
+	for _, s := range sizes {
+		if ps, ok := s.(*tg.PhotoSize); ok {
+			if ps.W*ps.H > bestArea {
+				bestArea = ps.W * ps.H
+				best = ps.Type
+			}
+		}
+	}
+	return best
+}
+
 // pickThumbSize returns the best thumb type string for inline display.
 // Prefers "m" (320px), then largest available PhotoSize by area.
 func pickThumbSize(sizes []tg.PhotoSizeClass) string {
@@ -353,6 +368,7 @@ func convertMessage(raw tg.MessageClass, chatID int64) (store.Message, bool) {
 					FileReference: photo.FileReference,
 					DCID:          photo.DCID,
 					ThumbSize:     thumb,
+					FullThumbSize: pickFullThumbSize(photo.Sizes),
 				}
 			}
 		}

@@ -14,6 +14,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/sorokin-vladimir/tele/internal/config"
 	"github.com/sorokin-vladimir/tele/internal/store"
 	internaltg "github.com/sorokin-vladimir/tele/internal/tg"
 	"github.com/sorokin-vladimir/tele/internal/ui/components"
@@ -46,6 +47,11 @@ type ChatHistoryMsg struct {
 }
 
 type PhotoReadyMsg struct {
+	PhotoID int64
+	Image   image.Image
+}
+
+type FullPhotoReadyMsg struct {
 	PhotoID int64
 	Image   image.Image
 }
@@ -93,7 +99,9 @@ type RootModel struct {
 	currentChatID int64
 	historyLimit  int
 	verbose       bool
+	cfg                *config.Config
 	imageCache         map[int64]image.Image
+	fullImageCache     map[int64]image.Image
 	searchModel        *screens.SearchModel
 	onChatOpen         func(int64)
 	nextSentinel       int
@@ -126,7 +134,8 @@ func NewRootModel(client internaltg.Client, st store.Store, historyLimit int, ve
 		st:           st,
 		historyLimit: historyLimit,
 		verbose:      verbose,
-		imageCache:   make(map[int64]image.Image),
+		imageCache:     make(map[int64]image.Image),
+		fullImageCache: make(map[int64]image.Image),
 		logo:         components.NewLogoLoader(80),
 	}
 }
@@ -146,6 +155,11 @@ func (m RootModel) WithScreen(s Screen) RootModel {
 
 func (m RootModel) WithFocus(f Focus) RootModel {
 	m.focus = f
+	return m
+}
+
+func (m RootModel) WithConfig(cfg *config.Config) RootModel {
+	m.cfg = cfg
 	return m
 }
 
@@ -369,8 +383,16 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.chat.SetImage(msg.PhotoID, msg.Image)
 		return m, nil
 
+	case FullPhotoReadyMsg:
+		m.fullImageCache[msg.PhotoID] = msg.Image
+		return m, nil
+
 	case components.OpenInViewerRequest:
-		if img, ok := m.imageCache[msg.PhotoID]; ok {
+		img := m.fullImageCache[msg.PhotoID]
+		if img == nil {
+			img = m.imageCache[msg.PhotoID]
+		}
+		if img != nil {
 			go openInViewer(img)
 		}
 		return m, nil
@@ -769,6 +791,20 @@ func (m RootModel) handleMainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.focusPane(FocusChatList)
 	}
 
+	if action == keys.ActionOpenInViewer && m.focus == FocusChat {
+		photoID := m.chat.SelectedMessagePhotoID()
+		if photoID != 0 {
+			img := m.fullImageCache[photoID]
+			if img == nil {
+				img = m.imageCache[photoID]
+			}
+			if img != nil {
+				go openInViewer(img)
+			}
+		}
+		return m, nil
+	}
+
 	if action == keys.ActionOpenContextMenu && m.focus == FocusChat {
 		if m.chat != nil {
 			msgID := m.chat.SelectedMessageID()
@@ -844,12 +880,29 @@ func downloadPhotoCmd(client internaltg.Client, ref store.PhotoRef) tea.Cmd {
 	}
 }
 
+func downloadFullPhotoCmd(client internaltg.Client, ref store.PhotoRef) tea.Cmd {
+	fullRef := ref
+	fullRef.ThumbSize = ref.FullThumbSize
+	return func() tea.Msg {
+		img, err := client.DownloadPhoto(context.Background(), fullRef)
+		if err != nil || img == nil {
+			return nil
+		}
+		return FullPhotoReadyMsg{PhotoID: ref.ID, Image: img}
+	}
+}
+
 func (m RootModel) pendingDownloadCmds(msgs []store.Message) tea.Cmd {
 	var cmds []tea.Cmd
 	for _, msg := range msgs {
 		if msg.Photo != nil {
 			if _, ok := m.imageCache[msg.Photo.ID]; !ok {
 				cmds = append(cmds, downloadPhotoCmd(m.tgClient, *msg.Photo))
+			}
+			if m.cfg != nil && m.cfg.Photos.EagerFullQuality && msg.Photo.FullThumbSize != "" {
+				if _, ok := m.fullImageCache[msg.Photo.ID]; !ok {
+					cmds = append(cmds, downloadFullPhotoCmd(m.tgClient, *msg.Photo))
+				}
 			}
 		}
 	}
