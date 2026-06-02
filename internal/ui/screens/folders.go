@@ -137,40 +137,23 @@ func (m FoldersModel) formatEntry(f store.FolderFilter, active bool) string {
 	if active {
 		prefix = "▶ "
 	}
-	nameWidth := m.width - runewidth.StringWidth(prefix) - runewidth.StringWidth(badge)
+	nameWidth := m.width - lipgloss.Width(prefix) - lipgloss.Width(badge)
+	if badge != "" {
+		nameWidth-- // reserve 1 col for separator space
+	}
 	if nameWidth < 1 {
 		nameWidth = 1
 	}
-	name := truncateTo(f.Title, nameWidth)
+	name := runewidth.Truncate(f.Title, nameWidth, "…")
 	line := prefix + padRight(name, nameWidth)
 	if badge != "" {
-		line += badge
+		line += " " + badge
 	}
 	return line
 }
 
-func truncateTo(s string, maxW int) string {
-	if runewidth.StringWidth(s) <= maxW {
-		return s
-	}
-	// Reserve 1 column for the "…" ellipsis.
-	targetW := maxW - 1
-	if targetW <= 0 {
-		return "…"
-	}
-	w := 0
-	for i, r := range s {
-		rw := runewidth.RuneWidth(r)
-		if w+rw > targetW {
-			return s[:i] + "…"
-		}
-		w += rw
-	}
-	return s
-}
-
 func padRight(s string, width int) string {
-	w := runewidth.StringWidth(s)
+	w := lipgloss.Width(s)
 	if w >= width {
 		return s
 	}

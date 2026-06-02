@@ -221,6 +221,28 @@ func TestChatList_View_OnlineUserShowsDot(t *testing.T) {
 	assert.Contains(t, view, "●")
 }
 
+func TestChatList_LongTitleShowsEllipsis(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetSize(20, 10)
+	m.SetChats([]store.Chat{{ID: 1, Title: strings.Repeat("x", 50)}})
+	view := m.View()
+	assert.Contains(t, view, "…")
+}
+
+func TestChatList_EmojiTitleBadgeWidthConsistent(t *testing.T) {
+	m := screens.NewChatListModel()
+	m.SetSize(30, 10)
+	m.SetChats([]store.Chat{
+		{ID: 1, Title: "Plain title", UnreadCount: 5},
+		{ID: 2, Title: "Emoji 🌐 title", UnreadCount: 5},
+	})
+	lines := strings.Split(m.View(), "\n")
+	require.GreaterOrEqual(t, len(lines), 2)
+	w0 := lipgloss.Width(lines[0])
+	w1 := lipgloss.Width(lines[1])
+	assert.Equal(t, w0, w1, "lines with and without emoji must have same visual width")
+}
+
 func TestChatList_View_OfflineUserNoDot(t *testing.T) {
 	m := screens.NewChatListModel()
 	m.SetSize(40, 20)

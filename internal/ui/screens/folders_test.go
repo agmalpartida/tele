@@ -88,6 +88,19 @@ func TestFolders_NotFocused_IgnoresKeys(t *testing.T) {
 	assert.Equal(t, 0, fm.Cursor())
 }
 
+func TestFolders_ExactFitNameHasSpaceBeforeBadge(t *testing.T) {
+	// "Russia news" = 11 visual cols; prefix "  " = 2; badge "[3]" = 3; separator = 1
+	// exact fit: width = 11+2+3+1 = 17 → nameWidth = 17-2-3-1 = 11 = exact fit, no padRight padding
+	// space must come from the explicit separator, not from padRight
+	f := store.FolderFilter{ID: 1, Title: "Russia news"}
+	m := screens.NewFoldersModel()
+	m.SetFolders([]store.FolderFilter{f})
+	m.SetSize(17, 10)
+	m.SetUnreadCounts(map[int]int{1: 3})
+	view := m.View()
+	assert.Contains(t, view, "Russia news [3]", "non-truncated name must have space before badge")
+}
+
 func TestFolders_View_ShowsFilledArrowOnActiveItem(t *testing.T) {
 	m := screens.NewFoldersModel()
 	m.SetFolders(testFolders)
@@ -107,7 +120,7 @@ func TestFolders_TruncatedBadgeFitsWidth(t *testing.T) {
 	m.SetUnreadCounts(map[int]int{3: 24})
 	view := m.View()
 	// The title must be truncated (with ellipsis) and badge must fit
-	assert.Contains(t, view, "…[24]", "truncated name + badge must appear")
+	assert.Contains(t, view, "… [24]", "truncated name + badge must be separated by a space")
 	assert.NotContains(t, view, "newsletter", "full title must not be visible")
 	// Each rendered line must fit in the inner width
 	for _, line := range strings.Split(view, "\n") {

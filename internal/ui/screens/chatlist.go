@@ -242,19 +242,19 @@ func (m *ChatListModel) View() string {
 
 		var content string
 		if badge == "" {
-			content = runewidth.Truncate(title, inner, "")
-			lw := runewidth.StringWidth(content)
+			content = runewidth.Truncate(title, inner, "…")
+			lw := lipgloss.Width(content)
 			if lw < inner {
 				content += strings.Repeat(" ", inner-lw)
 			}
 		} else {
-			badgeW := len(badge)
+			badgeW := lipgloss.Width(badge)
 			maxTitleW := inner - badgeW - 1
 			if maxTitleW < 0 {
 				maxTitleW = 0
 			}
-			truncTitle := runewidth.Truncate(title, maxTitleW, "")
-			titleW := runewidth.StringWidth(truncTitle)
+			truncTitle := runewidth.Truncate(title, maxTitleW, "…")
+			titleW := lipgloss.Width(truncTitle)
 			pad := inner - titleW - badgeW
 			if pad < 0 {
 				pad = 0
