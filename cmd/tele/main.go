@@ -73,7 +73,11 @@ func main() {
 	}
 	defer log.Sync() //nolint:errcheck
 
-	a := app.New(cfg, log, *verbose)
+	a, err := app.New(cfg, log, *verbose)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "init: %v\n", err)
+		os.Exit(1)
+	}
 	if err := a.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

@@ -17,21 +17,23 @@ import (
 
 // GotdClient wraps the gotd telegram client and implements the Client interface
 type GotdClient struct {
-	mu          sync.RWMutex
-	api         *tg.Client
-	events      chan store.Event
-	peers       map[int64]store.Peer
-	log         *zap.Logger
-	suppressMu  sync.Mutex
-	suppressIDs map[int]struct{}
+	mu           sync.RWMutex
+	api          *tg.Client
+	events       chan store.Event
+	peers        map[int64]store.Peer
+	log          *zap.Logger
+	suppressMu   sync.Mutex
+	suppressIDs  map[int]struct{}
+	stateStorage updates.StateStorage
 }
 
-func NewGotdClient(log *zap.Logger) *GotdClient {
+func NewGotdClient(log *zap.Logger, stateStorage updates.StateStorage) *GotdClient {
 	return &GotdClient{
-		events:      make(chan store.Event, 64),
-		peers:       make(map[int64]store.Peer),
-		log:         log,
-		suppressIDs: make(map[int]struct{}),
+		events:       make(chan store.Event, 64),
+		peers:        make(map[int64]store.Peer),
+		log:          log,
+		suppressIDs:  make(map[int]struct{}),
+		stateStorage: stateStorage,
 	}
 }
 
@@ -54,6 +56,7 @@ func (c *GotdClient) Connect(ctx context.Context, cfg *config.Config, af *AuthFl
 	// updates.New does not return an error — confirmed via go doc.
 	manager := updates.New(updates.Config{
 		Handler: dispatcher,
+		Storage: c.stateStorage,
 	})
 
 	// outboxHook intercepts UpdateReadHistoryOutbox / UpdateReadChannelOutbox before

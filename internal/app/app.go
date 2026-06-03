@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync/atomic"
 	"syscall"
 
@@ -65,20 +66,29 @@ type App struct {
 	currentChatID int64
 }
 
-func New(cfg *config.Config, log *zap.Logger, verbose bool) *App {
+func New(cfg *config.Config, log *zap.Logger, verbose bool) (*App, error) {
+	statePath := filepath.Join(filepath.Dir(cfg.Telegram.SessionFile), "state.db")
+	sqliteStore, err := store.NewSQLite(statePath, log)
+	if err != nil {
+		return nil, fmt.Errorf("open state DB: %w", err)
+	}
+	stateStorage := internaltg.NewSQLiteStateStorage(sqliteStore.DB())
 	return &App{
 		cfg:      cfg,
 		log:      log,
-		st:       store.NewMemory(),
-		client:   internaltg.NewGotdClient(log),
+		st:       sqliteStore,
+		client:   internaltg.NewGotdClient(log, stateStorage),
 		verbose:  verbose,
 		notifier: beeepNotifier{},
-	}
+	}, nil
 }
 
 func (a *App) Run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	if sc, ok := a.st.(interface{ Close() error }); ok {
+		defer sc.Close()
+	}
 
 	authFlow := internaltg.NewAuthFlow()
 	readyCh := make(chan struct{})
