@@ -214,3 +214,30 @@ func TestMemory_UpdateMessageReactions_ReplacesExisting(t *testing.T) {
 	require.Len(t, msgs[0].Reactions, 1)
 	assert.Equal(t, "❤️", msgs[0].Reactions[0].Emoji)
 }
+
+func TestMemory_FolderFilters_EmptyInitially(t *testing.T) {
+	s := store.NewMemory()
+	assert.Nil(t, s.FolderFilters())
+}
+
+func TestMemory_FolderFilters_SetAndGet(t *testing.T) {
+	s := store.NewMemory()
+	filters := []store.FolderFilter{
+		{ID: 1, Title: "Work", Groups: true},
+		{ID: 2, Title: "Personal", Contacts: true},
+	}
+	s.SetFolderFilters(filters)
+	got := s.FolderFilters()
+	require.Len(t, got, 2)
+	assert.Equal(t, "Work", got[0].Title)
+	assert.Equal(t, "Personal", got[1].Title)
+}
+
+func TestMemory_FolderFilters_Replace(t *testing.T) {
+	s := store.NewMemory()
+	s.SetFolderFilters([]store.FolderFilter{{ID: 1, Title: "Old"}})
+	s.SetFolderFilters([]store.FolderFilter{{ID: 2, Title: "New"}})
+	got := s.FolderFilters()
+	require.Len(t, got, 1)
+	assert.Equal(t, "New", got[0].Title)
+}

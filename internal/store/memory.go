@@ -7,9 +7,10 @@ import (
 )
 
 type memoryStore struct {
-	mu       sync.RWMutex
-	chats    map[int64]Chat
-	messages map[int64][]Message
+	mu            sync.RWMutex
+	chats         map[int64]Chat
+	messages      map[int64][]Message
+	folderFilters []FolderFilter
 }
 
 func NewMemory() Store {
@@ -194,4 +195,23 @@ func (s *memoryStore) UpdateChatOnline(userID int64, online bool) {
 	}
 	chat.Online = online
 	s.chats[userID] = chat
+}
+
+func (s *memoryStore) FolderFilters() []FolderFilter {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if len(s.folderFilters) == 0 {
+		return nil
+	}
+	cp := make([]FolderFilter, len(s.folderFilters))
+	copy(cp, s.folderFilters)
+	return cp
+}
+
+func (s *memoryStore) SetFolderFilters(filters []FolderFilter) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	cp := make([]FolderFilter, len(filters))
+	copy(cp, filters)
+	s.folderFilters = cp
 }

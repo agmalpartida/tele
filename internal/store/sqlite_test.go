@@ -77,6 +77,40 @@ func TestSQLite_LastMessage_PersistsSurvivesReopen(t *testing.T) {
 	assert.True(t, chat.LastMessage.Date.Equal(now))
 }
 
+func TestSQLite_FolderFilters_PersistsSurvivesReopen(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "state.db")
+	log := zap.NewNop()
+
+	filters := []store.FolderFilter{
+		{ID: 1, Title: "Work", Emoji: "💼", Groups: true},
+		{ID: 2, Title: "Personal", Contacts: true, ExcludeMuted: true},
+	}
+
+	s, err := store.NewSQLite(path, log)
+	require.NoError(t, err)
+	s.SetFolderFilters(filters)
+	s.Close()
+
+	s2, err := store.NewSQLite(path, log)
+	require.NoError(t, err)
+	defer s2.Close()
+
+	got := s2.FolderFilters()
+	require.Len(t, got, 2)
+	assert.Equal(t, 1, got[0].ID)
+	assert.Equal(t, "Work", got[0].Title)
+	assert.True(t, got[0].Groups)
+	assert.Equal(t, 2, got[1].ID)
+	assert.True(t, got[1].Contacts)
+	assert.True(t, got[1].ExcludeMuted)
+}
+
+func TestSQLite_FolderFilters_EmptyWhenNotSet(t *testing.T) {
+	s := newTestSQLite(t)
+	assert.Nil(t, s.FolderFilters())
+}
+
 func TestSQLite_Chats_OrderMatchesMemory(t *testing.T) {
 	s := newTestSQLite(t)
 	now := time.Now()

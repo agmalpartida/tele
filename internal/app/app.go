@@ -137,7 +137,10 @@ func (a *App) Run() error {
 			prog.Send(screens.TransitionToMainMsg{})
 		}()
 
-		// Load dialog filters concurrently
+		// Send cached folder filters immediately, then refresh from network
+		if cached := a.st.FolderFilters(); len(cached) > 0 {
+			prog.Send(ui.FolderFiltersMsg{Filters: cached})
+		}
 		go func() {
 			filters, err := a.client.GetDialogFilters(ctx)
 			if err != nil {
@@ -148,6 +151,7 @@ func (a *App) Run() error {
 				return
 			}
 			a.log.Info("folder filters loaded", zap.Int("count", len(filters)))
+			a.st.SetFolderFilters(filters)
 			prog.Send(ui.FolderFiltersMsg{Filters: filters})
 		}()
 	}()

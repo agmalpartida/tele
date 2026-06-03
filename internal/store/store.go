@@ -17,4 +17,6 @@ type Store interface {
 	UpdateChatReadMaxID(chatID int64, maxID int)
 	UpdateChatOutboxReadMaxID(chatID int64, maxID int)
 	UpdateChatOnline(userID int64, online bool)
+	FolderFilters() []FolderFilter
+	SetFolderFilters(filters []FolderFilter)
 }
