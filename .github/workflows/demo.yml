@@ -1,0 +1,52 @@
+name: Demo GIF
+
+on:
+  workflow_dispatch:
+  # release:
+  #   types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build tele
+        run: |
+          go build \
+            -ldflags "-X main.buildAPIID=${{ secrets.TG_API_ID }} -X main.buildAPIHash=${{ secrets.TG_API_HASH }}" \
+            -o /usr/local/bin/tele ./cmd/tele/
+
+      - name: Setup Telegram session
+        run: |
+          mkdir -p ~/.config/tele
+          printf '%s' "${{ secrets.TG_SESSION_JSON }}" > ~/.config/tele/session.json
+          cat > ~/.config/tele/config.yml <<'EOF'
+          telegram:
+            session_file: ~/.config/tele/session.json
+          ui:
+            history_limit: 50
+          EOF
+
+      - uses: charmbracelet/vhs-action@v2
+        with:
+          path: demo.tape
+
+      - name: Publish demo GIF
+        run: |
+          mkdir -p assets
+          mv demo.gif assets/demo.gif
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/demo.gif
+          git diff --cached --quiet || git commit -m "chore: update demo GIF"
+          git push

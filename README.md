@@ -23,7 +23,7 @@
   <a href="#roadmap">Roadmap</a>
 </p>
 
-<!-- TODO: record a demo GIF (e.g. with asciinema + agg) and save to assets/demo.gif -->
+<!-- TODO: record a demo GIF and save to assets/demo.gif -->
 <!-- ![tele demo](./assets/demo.gif) -->
 
 > **Status:** Active development. Already usable for daily messaging — private chats, groups, replies, reactions. Some Telegram features are still in progress.
@@ -85,16 +85,16 @@ On first run, `tele` creates `~/.config/tele/config.yml` and prompts you to log 
 
 ## Keybindings
 
-| Key | Action |
-| --- | ------ |
-| `j` / `k` | Navigate chats or scroll messages |
-| `i` | Compose message |
-| `r` | Reply |
-| `e` / `d` | Edit / delete own message |
-| `t` | React |
-| `/` | Search chats |
-| `0` / `1` / `2` | Focus folders / chat list / chat |
-| `q` | Quit |
+| Key             | Action                            |
+| --------------- | --------------------------------- |
+| `j` / `k`       | Navigate chats or scroll messages |
+| `i`             | Compose message                   |
+| `r`             | Reply                             |
+| `e` / `d`       | Edit / delete own message         |
+| `t`             | React                             |
+| `/`             | Search chats                      |
+| `0` / `1` / `2` | Focus folders / chat list / chat  |
+| `q`             | Quit                              |
 
 Full keybinding reference: [docs/keybindings.md](docs/keybindings.md)
 
@@ -116,12 +116,12 @@ ui:
 
 Tracked via [GitHub milestones](https://github.com/sorokin-vladimir/tele/milestones).
 
-| Milestone | Issues | Focus |
-| --------- | ------ | ----- |
-| [Security & Reliability](https://github.com/sorokin-vladimir/tele/milestone/4) | 7 open | Rollback on API failure, secure logging, photo cleanup, event delivery guarantees |
-| [Architecture & Performance](https://github.com/sorokin-vladimir/tele/milestone/5) | 12 open | Decompose model, debounce updates, store caching, memory caps |
-| [Feature Completeness](https://github.com/sorokin-vladimir/tele/milestone/6) | 15 open | Forward, @mentions, extended markdown, pinned messages, drafts, in-chat search |
-| [Power User & Polish](https://github.com/sorokin-vladimir/tele/milestone/7) | 16 open | Vim motions, configurable keybindings, command palette, themes, full-text search |
+| Milestone                                                                          | Issues  | Focus                                                                             |
+| ---------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------- |
+| [Security & Reliability](https://github.com/sorokin-vladimir/tele/milestone/4)     | 7 open  | Rollback on API failure, secure logging, photo cleanup, event delivery guarantees |
+| [Architecture & Performance](https://github.com/sorokin-vladimir/tele/milestone/5) | 12 open | Decompose model, debounce updates, store caching, memory caps                     |
+| [Feature Completeness](https://github.com/sorokin-vladimir/tele/milestone/6)       | 15 open | Forward, @mentions, extended markdown, pinned messages, drafts, in-chat search    |
+| [Power User & Polish](https://github.com/sorokin-vladimir/tele/milestone/7)        | 16 open | Vim motions, configurable keybindings, command palette, themes, full-text search  |
 
 ## Build from source
 
