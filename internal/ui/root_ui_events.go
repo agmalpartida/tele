@@ -35,7 +35,7 @@ func (m RootModel) updateUIMsg(msg tea.Msg) (RootModel, tea.Cmd) {
 			m.chatList.SetSize(leftW-2*borderSize, innerH)
 			m.chat.SetSize(rightW-2*borderSize, innerH)
 		}
-		return m, nil
+		return m, m.retransmitOnColsChange()
 
 	case FolderFiltersMsg:
 		if m.folderBar != nil {
@@ -51,7 +51,7 @@ func (m RootModel) updateUIMsg(msg tea.Msg) (RootModel, tea.Cmd) {
 			}
 			m.folderBar.SetUnreadCounts(m.computeFolderUnreads())
 		}
-		return m, nil
+		return m, m.retransmitOnColsChange()
 
 	case screens.FolderSelectedMsg:
 		m.activeFilter = msg.Filter

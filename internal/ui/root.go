@@ -21,6 +21,7 @@ import (
 	"github.com/sorokin-vladimir/tele/internal/ui/components"
 	"github.com/sorokin-vladimir/tele/internal/ui/keys"
 	"github.com/sorokin-vladimir/tele/internal/ui/layout"
+	"github.com/sorokin-vladimir/tele/internal/ui/media"
 	"github.com/sorokin-vladimir/tele/internal/ui/screens"
 )
 
@@ -93,6 +94,9 @@ type RootModel struct {
 	cfg                *config.Config
 	imageCache         map[int64]image.Image
 	fullImageCache     map[int64]image.Image
+	imageMode          media.Mode
+	kittyStore         *media.KittyStore
+	lastPhotoCols      int
 	searchModel        *screens.SearchModel
 	onChatOpen         func(int64)
 	nextSentinel       int
@@ -129,6 +133,7 @@ func NewRootModel(client internaltg.Client, st store.Store, historyLimit int, ve
 		verbose:           verbose,
 		imageCache:        make(map[int64]image.Image),
 		fullImageCache:    make(map[int64]image.Image),
+		kittyStore:        media.NewKittyStore(),
 		logo:              components.NewLogoLoader(80),
 	}
 }
@@ -153,6 +158,10 @@ func (m RootModel) WithFocus(f Focus) RootModel {
 
 func (m RootModel) WithConfig(cfg *config.Config) RootModel {
 	m.cfg = cfg
+	m.imageMode = media.DetectMode(cfg.Photos.Mode, os.Getenv)
+	if m.imageMode == media.ModeKitty {
+		m.chat.SetRenderer(media.NewKittyRenderer(m.kittyStore))
+	}
 	return m
 }
 
@@ -527,6 +536,65 @@ func (m RootModel) pendingDownloadCmds(msgs []store.Message) tea.Cmd {
 		}
 	}
 	return tea.Batch(cmds...)
+}
+
+// transmitPhotoCmd transmits one photo to the terminal at the chat's current
+// photo width and creates its virtual placement. No-op unless in Kitty mode.
+func (m RootModel) transmitPhotoCmd(photoID int64, img image.Image) tea.Cmd {
+	if m.imageMode != media.ModeKitty || img == nil {
+		return nil
+	}
+	cols := m.chat.PhotoContentCols()
+	id := m.kittyStore.IDFor(photoID)
+	b := img.Bounds()
+	rows := media.PhotoTermLines(b.Dx(), b.Dy(), cols)
+	m.kittyStore.MarkTransmitted(photoID, cols) // optimistic: render emits placeholders
+	return func() tea.Msg {
+		seq, err := media.TransmitSeq(id, img, cols, rows)
+		if err != nil {
+			return nil
+		}
+		return tea.Raw(seq)()
+	}
+}
+
+// retransmitOnColsChange re-transmits Kitty images when the photo content width
+// (in cells) actually changed since the last layout update. Photo width is
+// photoContentCols (chat-pane, capped), not the window width, so this fires on
+// any layout change that affects it (window resize, folder bar show/hide) and
+// skips window resizes that leave the column count unchanged.
+func (m *RootModel) retransmitOnColsChange() tea.Cmd {
+	cols := m.chat.PhotoContentCols()
+	if cols == m.lastPhotoCols {
+		return nil
+	}
+	m.lastPhotoCols = cols
+	return m.retransmitChatCmd()
+}
+
+// retransmitChatCmd deletes all terminal images and re-transmits the current
+// chat's downloaded photos at the current width. No-op unless in Kitty mode.
+func (m RootModel) retransmitChatCmd() tea.Cmd {
+	if m.imageMode != media.ModeKitty {
+		return nil
+	}
+	deleteAll := func() tea.Msg { return tea.Raw(media.DeleteAllSeq())() }
+	m.kittyStore.Clear()
+	var transmits []tea.Cmd
+	if m.st != nil && m.currentChatID != 0 {
+		for _, msg := range m.st.Messages(m.currentChatID) {
+			if msg.Photo == nil {
+				continue
+			}
+			if img, ok := m.imageCache[msg.Photo.ID]; ok {
+				transmits = append(transmits, m.transmitPhotoCmd(msg.Photo.ID, img))
+			}
+		}
+	}
+	// Sequence, not Batch: the delete-all must reach the terminal before the
+	// re-transmits. tea.Batch runs cmds concurrently with no ordering guarantee,
+	// so a transmit could land first and then be wiped by the delete-all.
+	return tea.Sequence(deleteAll, tea.Batch(transmits...))
 }
 
 func (m RootModel) markReadCmd() tea.Cmd {

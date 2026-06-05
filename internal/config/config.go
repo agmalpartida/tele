@@ -19,7 +19,8 @@ type UIConfig struct {
 }
 
 type PhotosConfig struct {
-	EagerFullQuality bool `mapstructure:"eager_full_quality"`
+	EagerFullQuality bool   `mapstructure:"eager_full_quality"`
+	Mode             string `mapstructure:"mode"` // auto | kitty | blocks
 }
 
 type Config struct {

@@ -33,21 +33,22 @@ func (m RootModel) updateNetworkMsg(msg tea.Msg) (RootModel, tea.Cmd) {
 		m.chatList.SetFocused(false)
 		m.chat.SetFocused(true)
 		m.statusBar.SetActivePane("chat")
+		retransmit := m.retransmitChatCmd()
 		if m.tgClient != nil {
 			m.chat.SetLoading(true)
 			client := m.tgClient
 			peer := msg.Chat.Peer
 			chatID := msg.Chat.ID
 			limit := m.historyLimit
-			return m, func() tea.Msg {
+			return m, tea.Batch(retransmit, func() tea.Msg {
 				msgs, err := client.GetHistory(context.Background(), peer, 0, limit)
 				if err != nil {
 					return nil
 				}
 				return ChatHistoryMsg{ChatID: chatID, Messages: msgs}
-			}
+			})
 		}
-		return m, nil
+		return m, retransmit
 
 	case ChatHistoryMsg:
 		if m.st != nil {
@@ -107,7 +108,7 @@ func (m RootModel) updateNetworkMsg(msg tea.Msg) (RootModel, tea.Cmd) {
 	case PhotoReadyMsg:
 		m.imageCache[msg.PhotoID] = msg.Image
 		m.chat.SetImage(msg.PhotoID, msg.Image)
-		return m, nil
+		return m, m.transmitPhotoCmd(msg.PhotoID, msg.Image)
 
 	case FullPhotoReadyMsg:
 		m.fullImageCache[msg.PhotoID] = msg.Image

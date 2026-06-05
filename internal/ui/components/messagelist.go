@@ -196,6 +196,7 @@ type MessageList struct {
 	images            map[int64]image.Image
 	showIndicator     bool
 	hasDarkBackground bool
+	renderer          media.Renderer
 }
 
 func NewMessageList(height, width int) *MessageList {
@@ -203,7 +204,18 @@ func NewMessageList(height, width int) *MessageList {
 		viewHeight: height,
 		viewWidth:  width,
 		images:     make(map[int64]image.Image),
+		renderer:   media.NewBlockRenderer(),
 	}
+}
+
+// SetRenderer swaps the active image renderer (block-art or Kitty).
+func (ml *MessageList) SetRenderer(r media.Renderer) {
+	ml.renderer = r
+}
+
+// PhotoContentCols exposes the width (in cells) photos are rendered at.
+func (ml *MessageList) PhotoContentCols() int {
+	return ml.photoContentCols()
 }
 
 // SetImage caches a downloaded photo for rendering.
@@ -288,6 +300,9 @@ func (ml *MessageList) photoContentCols() int {
 }
 
 func (ml *MessageList) SetSize(width, height int) {
+	if width != ml.viewWidth && ml.renderer != nil {
+		ml.renderer.Reset()
+	}
 	ml.viewWidth = width
 	ml.viewHeight = height
 }
@@ -896,19 +911,19 @@ func (ml *MessageList) renderMessage(msg store.Message, selected bool) []string 
 	}
 
 	if msg.Media != nil {
+		var artLines []string
 		if msg.Media.Kind == store.MediaPhoto && msg.Photo != nil {
 			if img, ok := ml.images[msg.Photo.ID]; ok {
-				photoCols := ml.photoContentCols()
-				artLines := media.RenderBlockArt(img, photoCols)
-				for _, al := range artLines {
-					lw := lipgloss.Width(al)
-					if lw < actualW {
-						al += strings.Repeat(" ", actualW-lw)
-					}
-					sideLines = append(sideLines, bs.Render(b.Left)+" "+al+" "+bs.Render(b.Right))
+				artLines = ml.renderer.Render(msg.Photo.ID, img, ml.photoContentCols())
+			}
+		}
+		if artLines != nil {
+			for _, al := range artLines {
+				lw := lipgloss.Width(al)
+				if lw < actualW {
+					al += strings.Repeat(" ", actualW-lw)
 				}
-			} else {
-				sideLines = append(sideLines, placeholderLine(msg.Media, actualW, b, bs))
+				sideLines = append(sideLines, bs.Render(b.Left)+" "+al+" "+bs.Render(b.Right))
 			}
 		} else {
 			sideLines = append(sideLines, placeholderLine(msg.Media, actualW, b, bs))

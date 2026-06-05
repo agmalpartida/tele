@@ -62,8 +62,44 @@ func RenderBlockArt(img image.Image, cols int) []string {
 	return lines
 }
 
+// BlockRenderer renders photos as ANSI half-block art and caches the result
+// per (photoID, cols). It is the universal fallback renderer.
+type BlockRenderer struct {
+	cache map[blockKey][]string
+}
+
+// NewBlockRenderer returns an empty-cache BlockRenderer.
+func NewBlockRenderer() *BlockRenderer {
+	return &BlockRenderer{cache: make(map[blockKey][]string)}
+}
+
+// Render returns cached half-block lines for the image, rendering on miss.
+func (r *BlockRenderer) Render(photoID int64, img image.Image, cols int) []string {
+	k := blockKey{photoID: photoID, cols: cols}
+	if v, ok := r.cache[k]; ok {
+		return v
+	}
+	v := RenderBlockArt(img, cols)
+	r.cache[k] = v
+	return v
+}
+
+// Reset clears the render cache (call when the target width changes).
+func (r *BlockRenderer) Reset() {
+	clear(r.cache)
+}
+
+// maxPhotoRows bounds the terminal-row height of an inline photo. It keeps the
+// reserved footprint sane for extreme aspect ratios and, critically, keeps the
+// Kitty placeholder row index within the 297-entry row/column diacritic table
+// (kitty.Diacritic clamps out-of-range indices, which would garble the image).
+// Cols are independently capped well below this by photoContentCols.
+const maxPhotoRows = 256
+
 // PhotoTermLines returns the number of terminal lines RenderBlockArt produces
-// for an image of imgW×imgH pixels scaled to cols columns.
+// for an image of imgW×imgH pixels scaled to cols columns. The result is capped
+// at maxPhotoRows; because every renderer and the layout height calc all go
+// through this function, the cap keeps their footprints in lock-step.
 func PhotoTermLines(imgW, imgH, cols int) int {
 	if imgW == 0 || cols == 0 {
 		return 1
@@ -72,7 +108,11 @@ func PhotoTermLines(imgW, imgH, cols int) int {
 	if targetH == 0 {
 		targetH = 2
 	}
-	return (targetH + 1) / 2
+	rows := (targetH + 1) / 2
+	if rows > maxPhotoRows {
+		rows = maxPhotoRows
+	}
+	return rows
 }
 
 func clamp(v, lo, hi int) int {
