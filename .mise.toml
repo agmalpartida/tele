@@ -36,3 +36,7 @@ run = ["go vet ./...", "golangci-lint run ./...", "go test ./..."]
 [tasks.tidy]
 description = "Tidy go modules"
 run = "go mod tidy"
+
+[tasks.hooks]
+description = "Install git hooks via lefthook"
+run = "lefthook install"
