@@ -39,7 +39,7 @@ brews:
     ids:
       - tarballs
     repository:
-      owner: sorokin-vladimir
+      owner: agmalpartida
       name: homebrew-tele
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     directory: Formula
