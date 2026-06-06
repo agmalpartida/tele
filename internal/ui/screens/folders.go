@@ -6,10 +6,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	runewidth "github.com/mattn/go-runewidth"
 	"github.com/agmalpartida/tele/internal/store"
 	"github.com/agmalpartida/tele/internal/ui/keys"
 	"github.com/agmalpartida/tele/internal/ui/layout"
+	runewidth "github.com/mattn/go-runewidth"
 )
 
 // FolderSelectedMsg is emitted when the user confirms a folder selection.

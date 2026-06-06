@@ -3,8 +3,8 @@ package components
 import (
 	"strings"
 
-	runewidth "github.com/mattn/go-runewidth"
 	"github.com/agmalpartida/tele/internal/store"
+	runewidth "github.com/mattn/go-runewidth"
 )
 
 // BuildEditPreview returns a two-line preview string for the edit bar above the composer:

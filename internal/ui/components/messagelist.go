@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
-	runewidth "github.com/mattn/go-runewidth"
 	"github.com/agmalpartida/tele/internal/store"
 	"github.com/agmalpartida/tele/internal/ui/media"
+	runewidth "github.com/mattn/go-runewidth"
 )
 
 var (
