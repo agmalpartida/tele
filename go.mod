@@ -1,4 +1,4 @@
-module github.com/sorokin-vladimir/tele
+module github.com/agmalpartida/tele
 
 go 1.26.0
 

@@ -6,9 +6,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
-	"github.com/sorokin-vladimir/tele/internal/ui/components"
-	"github.com/sorokin-vladimir/tele/internal/ui/screens"
+	"github.com/agmalpartida/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/ui/components"
+	"github.com/agmalpartida/tele/internal/ui/screens"
 )
 
 type sentMsgConfirmedMsg struct {

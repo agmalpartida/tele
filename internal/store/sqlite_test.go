@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 func newTestSQLite(t *testing.T) *store.SQLiteStore {

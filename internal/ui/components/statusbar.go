@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/sorokin-vladimir/tele/internal/ui/keys"
+	"github.com/agmalpartida/tele/internal/ui/keys"
 )
 
 var (

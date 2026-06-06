@@ -10,8 +10,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/gotd/td/telegram/updates"
-	"github.com/sorokin-vladimir/tele/internal/store"
-	internaltg "github.com/sorokin-vladimir/tele/internal/tg"
+	"github.com/agmalpartida/tele/internal/store"
+	internaltg "github.com/agmalpartida/tele/internal/tg"
 )
 
 func newTestStateStorage(t *testing.T) updates.StateStorage {

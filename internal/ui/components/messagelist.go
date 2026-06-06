@@ -9,8 +9,8 @@ import (
 
 	"charm.land/lipgloss/v2"
 	runewidth "github.com/mattn/go-runewidth"
-	"github.com/sorokin-vladimir/tele/internal/store"
-	"github.com/sorokin-vladimir/tele/internal/ui/media"
+	"github.com/agmalpartida/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/ui/media"
 )
 
 var (

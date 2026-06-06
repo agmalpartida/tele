@@ -3,7 +3,7 @@ package media_test
 import (
 	"testing"
 
-	"github.com/sorokin-vladimir/tele/internal/ui/media"
+	"github.com/agmalpartida/tele/internal/ui/media"
 	"github.com/stretchr/testify/require"
 )
 

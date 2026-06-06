@@ -5,7 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 func (m RootModel) handleStoreEvent(msg store.Event) (RootModel, tea.Cmd) {

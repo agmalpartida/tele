@@ -7,10 +7,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	runewidth "github.com/mattn/go-runewidth"
-	"github.com/sorokin-vladimir/tele/internal/store"
-	"github.com/sorokin-vladimir/tele/internal/ui/components"
-	"github.com/sorokin-vladimir/tele/internal/ui/keys"
-	"github.com/sorokin-vladimir/tele/internal/ui/layout"
+	"github.com/agmalpartida/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/ui/components"
+	"github.com/agmalpartida/tele/internal/ui/keys"
+	"github.com/agmalpartida/tele/internal/ui/layout"
 )
 
 type OpenChatMsg struct{ Chat store.Chat }

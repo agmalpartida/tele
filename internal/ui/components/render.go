@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 var (

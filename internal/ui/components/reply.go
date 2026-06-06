@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	runewidth "github.com/mattn/go-runewidth"
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 // BuildEditPreview returns a two-line preview string for the edit bar above the composer:

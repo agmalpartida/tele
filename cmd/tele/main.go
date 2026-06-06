@@ -13,8 +13,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/sorokin-vladimir/tele/internal/app"
-	"github.com/sorokin-vladimir/tele/internal/config"
+	"github.com/agmalpartida/tele/internal/app"
+	"github.com/agmalpartida/tele/internal/config"
 )
 
 // Injected at build time via -ldflags. Fall back to config file values if zero.

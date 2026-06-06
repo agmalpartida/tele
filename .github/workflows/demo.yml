@@ -19,7 +19,7 @@ jobs:
         uses: Homebrew/actions/setup-homebrew@main
 
       - name: Install tele
-        run: brew install sorokin-vladimir/tele/tele
+        run: brew install agmalpartida/tele/tele
 
       - name: Setup Telegram session
         run: |

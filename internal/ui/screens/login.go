@@ -5,7 +5,7 @@ import (
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
-	internaltg "github.com/sorokin-vladimir/tele/internal/tg"
+	internaltg "github.com/agmalpartida/tele/internal/tg"
 )
 
 type AuthRequestMsg struct {

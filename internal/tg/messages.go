@@ -11,7 +11,7 @@ import (
 	"github.com/gotd/td/tg"
 	"go.uber.org/zap"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 func (c *GotdClient) GetHistory(ctx context.Context, peer store.Peer, offsetID int, limit int) ([]store.Message, error) {

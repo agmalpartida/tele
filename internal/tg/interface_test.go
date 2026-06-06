@@ -5,8 +5,8 @@ import (
 	"image"
 	"testing"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
-	internaltg "github.com/sorokin-vladimir/tele/internal/tg"
+	"github.com/agmalpartida/tele/internal/store"
+	internaltg "github.com/agmalpartida/tele/internal/tg"
 	"github.com/stretchr/testify/assert"
 )
 

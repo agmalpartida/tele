@@ -11,7 +11,7 @@ import (
 	"github.com/gotd/td/tg"
 	"go.uber.org/zap"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 func (c *GotdClient) GetDialogs(ctx context.Context) ([]store.Chat, error) {

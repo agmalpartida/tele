@@ -11,8 +11,8 @@ import (
 	"github.com/gotd/td/telegram/updates"
 	"github.com/gotd/td/tg"
 
-	"github.com/sorokin-vladimir/tele/internal/config"
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/config"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 // GotdClient wraps the gotd telegram client and implements the Client interface

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sorokin-vladimir/tele/internal/ui/components"
+	"github.com/agmalpartida/tele/internal/ui/components"
 	"github.com/stretchr/testify/assert"
 )
 

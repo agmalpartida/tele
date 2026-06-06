@@ -15,14 +15,14 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/atotto/clipboard"
 
-	"github.com/sorokin-vladimir/tele/internal/config"
-	"github.com/sorokin-vladimir/tele/internal/store"
-	internaltg "github.com/sorokin-vladimir/tele/internal/tg"
-	"github.com/sorokin-vladimir/tele/internal/ui/components"
-	"github.com/sorokin-vladimir/tele/internal/ui/keys"
-	"github.com/sorokin-vladimir/tele/internal/ui/layout"
-	"github.com/sorokin-vladimir/tele/internal/ui/media"
-	"github.com/sorokin-vladimir/tele/internal/ui/screens"
+	"github.com/agmalpartida/tele/internal/config"
+	"github.com/agmalpartida/tele/internal/store"
+	internaltg "github.com/agmalpartida/tele/internal/tg"
+	"github.com/agmalpartida/tele/internal/ui/components"
+	"github.com/agmalpartida/tele/internal/ui/keys"
+	"github.com/agmalpartida/tele/internal/ui/layout"
+	"github.com/agmalpartida/tele/internal/ui/media"
+	"github.com/agmalpartida/tele/internal/ui/screens"
 )
 
 type Screen int

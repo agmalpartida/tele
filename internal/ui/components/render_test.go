@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
-	"github.com/sorokin-vladimir/tele/internal/ui/components"
+	"github.com/agmalpartida/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/ui/components"
 	"github.com/stretchr/testify/assert"
 )
 

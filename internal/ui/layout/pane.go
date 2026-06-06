@@ -2,7 +2,7 @@ package layout
 
 import (
 	tea "charm.land/bubbletea/v2"
-	"github.com/sorokin-vladimir/tele/internal/ui/keys"
+	"github.com/agmalpartida/tele/internal/ui/keys"
 )
 
 // Pane is implemented by each screen panel (chatlist, chat).

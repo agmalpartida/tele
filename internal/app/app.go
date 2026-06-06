@@ -13,11 +13,11 @@ import (
 	"github.com/gen2brain/beeep"
 	"go.uber.org/zap"
 
-	"github.com/sorokin-vladimir/tele/internal/config"
-	"github.com/sorokin-vladimir/tele/internal/store"
-	internaltg "github.com/sorokin-vladimir/tele/internal/tg"
-	"github.com/sorokin-vladimir/tele/internal/ui"
-	"github.com/sorokin-vladimir/tele/internal/ui/screens"
+	"github.com/agmalpartida/tele/internal/config"
+	"github.com/agmalpartida/tele/internal/store"
+	internaltg "github.com/agmalpartida/tele/internal/tg"
+	"github.com/agmalpartida/tele/internal/ui"
+	"github.com/agmalpartida/tele/internal/ui/screens"
 )
 
 // Notifier sends OS desktop notifications.

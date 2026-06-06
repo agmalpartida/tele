@@ -3,7 +3,7 @@ package keys_test
 import (
 	"testing"
 
-	"github.com/sorokin-vladimir/tele/internal/ui/keys"
+	"github.com/agmalpartida/tele/internal/ui/keys"
 	"github.com/stretchr/testify/assert"
 )
 

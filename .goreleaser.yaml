@@ -43,7 +43,7 @@ brews:
       name: homebrew-tele
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     directory: Formula
-    homepage: "https://github.com/sorokin-vladimir/tele"
+    homepage: "https://github.com/agmalpartida/tele"
     description: "TUI Telegram client"
     install: |
       bin.install "tele"

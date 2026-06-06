@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 func newTestDispatcher(t *testing.T, suppress func(int) bool) (*tg.UpdateDispatcher, chan store.Event, chan store.Event) {

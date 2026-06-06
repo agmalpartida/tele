@@ -12,7 +12,7 @@
 
 [![Go](https://img.shields.io/badge/go-1.26+-blue)](https://go.dev)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/sorokin-vladimir/tele)](https://github.com/sorokin-vladimir/tele/releases)
+[![Release](https://img.shields.io/github/v/release/agmalpartida/tele)](https://github.com/agmalpartida/tele/releases)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Linux-lightgrey)](#installation)
 
 <p align="center">
@@ -92,14 +92,14 @@ YAML-based config with sensible defaults.
 ### macOS / Linux — Homebrew
 
 ```sh
-brew tap sorokin-vladimir/tele
+brew tap agmalpartida/tele
 brew install tele
 ```
 
 ### Linux — binary
 
 ```sh
-curl -sL https://github.com/sorokin-vladimir/tele/releases/latest/download/tele-linux-amd64 \
+curl -sL https://github.com/agmalpartida/tele/releases/latest/download/tele-linux-amd64 \
   -o ~/.local/bin/tele && chmod +x ~/.local/bin/tele
 ```
 
@@ -171,7 +171,7 @@ ui:
 
 ## Roadmap
 
-Tracked via [GitHub milestones](https://github.com/sorokin-vladimir/tele/milestones).
+Tracked via [GitHub milestones](https://github.com/agmalpartida/tele/milestones).
 
 | Milestone                  | Focus                                  |
 | -------------------------- | -------------------------------------- |
@@ -187,7 +187,7 @@ Tracked via [GitHub milestones](https://github.com/sorokin-vladimir/tele/milesto
 Requires Go 1.26+ and your own [Telegram API credentials](https://my.telegram.org).
 
 ```sh
-git clone https://github.com/sorokin-vladimir/tele
+git clone https://github.com/agmalpartida/tele
 cd tele
 go build \
   -ldflags "-X main.buildAPIID=YOUR_API_ID -X main.buildAPIHash=YOUR_API_HASH" \

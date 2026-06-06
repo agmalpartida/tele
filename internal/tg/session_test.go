@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	internaltg "github.com/sorokin-vladimir/tele/internal/tg"
+	internaltg "github.com/agmalpartida/tele/internal/tg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

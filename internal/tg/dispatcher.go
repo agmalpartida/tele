@@ -10,7 +10,7 @@ import (
 
 	"github.com/gotd/td/tg"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 // shouldSuppress is called for every incoming message; it must be non-blocking.

@@ -7,12 +7,12 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/sorokin-vladimir/tele/internal/store"
-	internaltg "github.com/sorokin-vladimir/tele/internal/tg"
-	"github.com/sorokin-vladimir/tele/internal/ui"
-	"github.com/sorokin-vladimir/tele/internal/ui/components"
-	"github.com/sorokin-vladimir/tele/internal/ui/keys"
-	"github.com/sorokin-vladimir/tele/internal/ui/screens"
+	"github.com/agmalpartida/tele/internal/store"
+	internaltg "github.com/agmalpartida/tele/internal/tg"
+	"github.com/agmalpartida/tele/internal/ui"
+	"github.com/agmalpartida/tele/internal/ui/components"
+	"github.com/agmalpartida/tele/internal/ui/keys"
+	"github.com/agmalpartida/tele/internal/ui/screens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

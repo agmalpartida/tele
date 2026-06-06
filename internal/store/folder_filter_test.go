@@ -3,7 +3,7 @@ package store_test
 import (
 	"testing"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 	"github.com/stretchr/testify/assert"
 )
 

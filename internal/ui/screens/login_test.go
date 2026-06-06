@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
-	internaltg "github.com/sorokin-vladimir/tele/internal/tg"
-	"github.com/sorokin-vladimir/tele/internal/ui/screens"
+	internaltg "github.com/agmalpartida/tele/internal/tg"
+	"github.com/agmalpartida/tele/internal/ui/screens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"image"
 
-	"github.com/sorokin-vladimir/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/store"
 )
 
 // Client is the interface for all Telegram operations.

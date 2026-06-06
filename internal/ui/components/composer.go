@@ -32,7 +32,7 @@ func NewComposer(width int) *Composer {
 	// multiple fallbacks. Recommended terminals: Ghostty / iTerm2 (macOS), Windows Terminal (Windows),
 	// kitty, WezTerm, Alacritty. tmux users need: set -g extended-keys on
 	// See: https://github.com/jesseduffield/lazygit/blob/master/docs/keybindings/Custom_Keybindings.md#terminal-compatibility
-	// Issue: https://github.com/sorokin-vladimir/tele/issues/9#issuecomment-4600787928
+	// Issue: https://github.com/agmalpartida/tele/issues/9#issuecomment-4600787928
 	ta.KeyMap.InsertNewline = key.NewBinding(key.WithKeys("alt+enter", "shift+enter"))
 	ta.KeyMap.Paste = key.NewBinding() // handled at root level via readClipboardCmd → tea.PasteMsg
 	ta.CharLimit = 4096

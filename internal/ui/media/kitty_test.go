@@ -6,7 +6,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi/kitty"
-	"github.com/sorokin-vladimir/tele/internal/ui/media"
+	"github.com/agmalpartida/tele/internal/ui/media"
 	"github.com/stretchr/testify/require"
 )
 

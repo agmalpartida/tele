@@ -6,7 +6,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	lipcompat "charm.land/lipgloss/v2/compat"
-	"github.com/sorokin-vladimir/tele/internal/ui/keys"
+	"github.com/agmalpartida/tele/internal/ui/keys"
 )
 
 // CloseContextMenuMsg is emitted when the context menu closes without an action.

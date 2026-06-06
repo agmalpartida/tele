@@ -6,9 +6,9 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/sorokin-vladimir/tele/internal/store"
-	"github.com/sorokin-vladimir/tele/internal/ui/keys"
-	"github.com/sorokin-vladimir/tele/internal/ui/screens"
+	"github.com/agmalpartida/tele/internal/store"
+	"github.com/agmalpartida/tele/internal/ui/keys"
+	"github.com/agmalpartida/tele/internal/ui/screens"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
