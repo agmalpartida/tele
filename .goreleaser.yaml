@@ -41,7 +41,7 @@ brews:
     repository:
       owner: agmalpartida
       name: homebrew-tele
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+      token: "{{ .Env.GITHUB_TOKEN }}"
     directory: Formula
     homepage: "https://github.com/agmalpartida/tele"
     description: "TUI Telegram client"
