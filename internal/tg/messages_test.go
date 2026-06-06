@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gotd/td/tg"
 	"github.com/agmalpartida/tele/internal/store"
+	"github.com/gotd/td/tg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

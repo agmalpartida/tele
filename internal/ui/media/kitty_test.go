@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/x/ansi/kitty"
 	"github.com/agmalpartida/tele/internal/ui/media"
+	"github.com/charmbracelet/x/ansi/kitty"
 	"github.com/stretchr/testify/require"
 )
 

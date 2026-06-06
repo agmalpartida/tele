@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/gotd/td/telegram/updates"
 	"github.com/agmalpartida/tele/internal/store"
 	internaltg "github.com/agmalpartida/tele/internal/tg"
+	"github.com/gotd/td/telegram/updates"
 )
 
 func newTestStateStorage(t *testing.T) updates.StateStorage {
