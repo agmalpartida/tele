@@ -57,7 +57,7 @@ for plat in "${!PLATFORMS[@]}"; do
   echo "   $tarball"
   curl -sL -o "$TMPDIR/$tarball" "$url"
   sum="$($SHA_CMD "$TMPDIR/$tarball" | awk '{print $1}')"
-  CHECKS[$plat]="sha256:$sum"
+  CHECKS[$plat]="$sum"
 done
 
 echo ""
@@ -69,12 +69,12 @@ sed -i '' 's/version ".*"/version "'"$VERSION"'"/' "$FORMULA"
 # Update sha256 lines by matching the URL that precedes each one.
 # Each block has the form:
 #   url "...tele_{os}_{arch}.tar.gz"
-#   sha256 "sha256:..."
+#   sha256 "hex..."
 for plat in "${!PLATFORMS[@]}"; do
   tarball="${PLATFORMS[$plat]}"
   checksum="${CHECKS[$plat]}"
   # Match the url line for this tarball and replace sha256 on the next line
-  sed -i '' -E '/url ".*'"$tarball"'"/{n;s/sha256 "sha256:[a-f0-9]*"/sha256 "'"$checksum"'"/;}' "$FORMULA"
+  sed -i '' -E '/url ".*'"$tarball"'"/{n;s/sha256 "[a-f0-9]*"/sha256 "'"$checksum"'"/;}' "$FORMULA"
 done
 
 echo "done. updated to v$VERSION"
