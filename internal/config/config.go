@@ -1,7 +1,9 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -42,6 +44,9 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Telegram.SessionFile == "" {
 		cfg.Telegram.SessionFile = filepath.Join(filepath.Dir(path), "session.json")
+	} else if strings.HasPrefix(cfg.Telegram.SessionFile, "~/") {
+		home, _ := os.UserHomeDir()
+		cfg.Telegram.SessionFile = filepath.Join(home, cfg.Telegram.SessionFile[2:])
 	}
 	return &cfg, nil
 }
