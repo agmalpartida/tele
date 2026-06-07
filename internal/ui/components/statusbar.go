@@ -86,11 +86,13 @@ func (sb *StatusBar) hints() string {
 		up := sb.keyMap.KeyFor(keys.ContextChatList, keys.ActionUp)
 		open := sb.keyMap.KeyFor(keys.ContextChatList, keys.ActionConfirm)
 		search := sb.keyMap.KeyFor(keys.ContextChatList, keys.ActionSearch)
+		del := sb.keyMap.KeyFor(keys.ContextChatList, keys.ActionDeleteChat)
 		quit := sb.keyMap.KeyFor(keys.ContextGlobal, keys.ActionQuit)
 		return joinHints(
 			hintNav(down, up, "move"),
 			hintKey(open, "open"),
 			hintKey(search, "search"),
+			hintKey(del, "delete"),
 			hintKey(quit, "quit"),
 		)
 	}

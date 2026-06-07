@@ -226,8 +226,13 @@ func (m RootModel) handleDeleteChat(msg screens.DeleteChatRequest) (RootModel, t
 		m.chatList.SetActiveByID(0)
 	}
 
-	// Remove from store immediately (optimistic)
+	// Remove from store immediately (optimistic) and refresh the list
 	m.st.RemoveChat(chatID)
+	m.chatList.SetChats(m.filteredChats())
+	if m.folderBar != nil {
+		m.folderBar.SetUnreadCounts(m.computeFolderUnreads())
+	}
+	m.statusBar.SetStatus("Chat deleted")
 
 	if m.tgClient == nil {
 		return m, nil

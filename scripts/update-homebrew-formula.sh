@@ -66,14 +66,16 @@ echo ":: updating $FORMULA ..."
 # Update version line
 sed -i '' 's/version ".*"/version "'"$VERSION"'"/' "$FORMULA"
 
-# Update sha256 lines by matching the URL that precedes each one.
+# Update URL and sha256 for each platform tarball.
 # Each block has the form:
 #   url "...tele_{os}_{arch}.tar.gz"
 #   sha256 "hex..."
 for plat in "${!PLATFORMS[@]}"; do
   tarball="${PLATFORMS[$plat]}"
   checksum="${CHECKS[$plat]}"
-  # Match the url line for this tarball and replace sha256 on the next line
+  # Update the url line to point to the new version
+  sed -i '' -E 's|(url ".*/releases/download/)v[0-9.]+(/'"$tarball"'")|\1v'"$VERSION"'\2|' "$FORMULA"
+  # Update sha256 on the line following the url
   sed -i '' -E '/url ".*'"$tarball"'"/{n;s/sha256 "[a-f0-9]*"/sha256 "'"$checksum"'"/;}' "$FORMULA"
 done
 
