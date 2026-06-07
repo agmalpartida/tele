@@ -3,6 +3,7 @@ package tg
 import (
 	"context"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -102,6 +103,7 @@ func (c *GotdClient) Connect(ctx context.Context, cfg *config.Config, af *AuthFl
 		UpdateHandler:  hook,
 		SessionStorage: sess,
 		Logger:         c.log,
+		DialTimeout:    30 * time.Second,
 	})
 
 	c.log.Debug("connecting to telegram")
