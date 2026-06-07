@@ -381,15 +381,15 @@ func (c *GotdClient) DeleteChat(ctx context.Context, chat store.Chat) error {
 	switch chat.Peer.Type {
 	case store.PeerUser:
 		_, err := api.MessagesDeleteHistory(ctx, &tg.MessagesDeleteHistoryRequest{
-			Peer:  peerToInput(chat.Peer),
-			MaxID: 0,
+			Peer:   peerToInput(chat.Peer),
+			MaxID:  0,
 			Revoke: true,
 		})
 		return err
 	case store.PeerGroup:
 		_, err := api.MessagesDeleteChatUser(ctx, &tg.MessagesDeleteChatUserRequest{
-			ChatID:  chat.ID,
-			UserID:  &tg.InputUserSelf{},
+			ChatID:        chat.ID,
+			UserID:        &tg.InputUserSelf{},
 			RevokeHistory: true,
 		})
 		if err != nil {
