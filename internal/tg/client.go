@@ -2,6 +2,7 @@ package tg
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -112,6 +113,10 @@ func (c *GotdClient) Connect(ctx context.Context, cfg *config.Config, af *AuthFl
 		flow := auth.NewFlow(af, auth.SendCodeOptions{})
 		if err := tc.Auth().IfNecessary(ctx, flow); err != nil {
 			c.log.Error("auth failed", zap.Error(err))
+			select {
+			case af.Errors <- fmt.Sprintf("Auth error: %v", err):
+			default:
+			}
 			return err
 		}
 
