@@ -20,5 +20,6 @@ type Store interface {
 	UpdateChatOnline(userID int64, online bool)
 	FolderFilters() []FolderFilter
 	SetFolderFilters(filters []FolderFilter)
+	RemoveChat(id int64)
 	ClearForNewAccount(ownerID int64)
 }

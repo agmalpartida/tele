@@ -210,6 +210,47 @@ func (m RootModel) handleDeleteMsg(msg components.DeleteMsgRequest) (RootModel, 
 	}
 }
 
+func (m RootModel) handleDeleteChat(msg screens.DeleteChatRequest) (RootModel, tea.Cmd) {
+	if m.st == nil {
+		return m, nil
+	}
+	chatID := msg.Chat.ID
+	chat := msg.Chat
+
+	// If currently viewing this chat, close it
+	if m.currentChatID == chatID {
+		m.chat.SetChat(nil)
+		m.chat.SetMessages(nil)
+		m.currentChatID = 0
+		m.focus = FocusChatList
+		m.chatList.SetActiveByID(0)
+	}
+
+	// Remove from store immediately (optimistic)
+	m.st.RemoveChat(chatID)
+
+	if m.tgClient == nil {
+		return m, nil
+	}
+
+	client := m.tgClient
+	return m, func() tea.Msg {
+		if err := client.DeleteChat(context.Background(), chat); err != nil {
+			return deleteChatFailedMsg{chat: chat}
+		}
+		return nil
+	}
+}
+
+func (m RootModel) handleDeleteChatFailed(msg deleteChatFailedMsg) (RootModel, tea.Cmd) {
+	if m.st != nil {
+		m.st.SetChat(msg.chat)
+	}
+	m.chatList.SetChats(m.filteredChats())
+	m.statusBar.SetStatus("Delete chat failed")
+	return m, nil
+}
+
 func (m RootModel) handleDeleteMsgFailed(msg deleteMsgFailedMsg) (RootModel, tea.Cmd) {
 	if m.st != nil {
 		m.st.SetMessages(msg.chatID, msg.messages)

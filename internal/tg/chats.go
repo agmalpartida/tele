@@ -370,6 +370,44 @@ func convertChannel(ch *tg.Channel) (store.Chat, bool) {
 	}, true
 }
 
+func (c *GotdClient) DeleteChat(ctx context.Context, chat store.Chat) error {
+	c.mu.RLock()
+	api := c.api
+	c.mu.RUnlock()
+	if api == nil {
+		return fmt.Errorf("not connected")
+	}
+
+	switch chat.Peer.Type {
+	case store.PeerUser:
+		_, err := api.MessagesDeleteHistory(ctx, &tg.MessagesDeleteHistoryRequest{
+			Peer:  peerToInput(chat.Peer),
+			MaxID: 0,
+			Revoke: true,
+		})
+		return err
+	case store.PeerGroup:
+		_, err := api.MessagesDeleteChatUser(ctx, &tg.MessagesDeleteChatUserRequest{
+			ChatID:  chat.ID,
+			UserID:  &tg.InputUserSelf{},
+			RevokeHistory: true,
+		})
+		if err != nil {
+			return err
+		}
+		_, err = api.MessagesDeleteChat(ctx, chat.ID)
+		return err
+	case store.PeerChannel, store.PeerSuperGroup:
+		_, err := api.ChannelsLeaveChannel(ctx, &tg.InputChannel{
+			ChannelID:  chat.Peer.ID,
+			AccessHash: chat.Peer.AccessHash,
+		})
+		return err
+	default:
+		return fmt.Errorf("unsupported peer type for delete chat: %v", chat.Peer.Type)
+	}
+}
+
 func isMuted(d *tg.Dialog) bool {
 	muteUntil, hasMute := d.NotifySettings.GetMuteUntil()
 	if !hasMute {

@@ -227,4 +227,11 @@ func (s *memoryStore) SetFolderFilters(filters []FolderFilter) {
 	s.folderFilters = cp
 }
 
+func (s *memoryStore) RemoveChat(id int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.chats, id)
+	delete(s.messages, id)
+}
+
 func (s *memoryStore) ClearForNewAccount(_ int64) {}

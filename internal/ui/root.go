@@ -74,6 +74,10 @@ type FolderFiltersMsg struct {
 
 type clearTypingMsg struct{ serial int }
 
+type deleteChatFailedMsg struct {
+	chat store.Chat
+}
+
 type RootModel struct {
 	screen             Screen
 	focus              Focus
@@ -249,12 +253,16 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleReactionFailed(msg)
 	case deleteMsgFailedMsg:
 		return m.handleDeleteMsgFailed(msg)
+	case deleteChatFailedMsg:
+		return m.handleDeleteChatFailed(msg)
 	case editMsgFailedMsg:
 		return m.handleEditMsgFailed(msg)
 	case components.ReactConfirmedMsg:
 		return m.handleReactConfirmed(msg)
 	case components.DeleteMsgRequest:
 		return m.handleDeleteMsg(msg)
+	case screens.DeleteChatRequest:
+		return m.handleDeleteChat(msg)
 	// network/data messages
 	case screens.OpenChatMsg,
 		ChatHistoryMsg,

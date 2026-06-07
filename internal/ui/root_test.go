@@ -44,6 +44,8 @@ func (m *mockTGClient) DownloadPhoto(_ context.Context, _ store.PhotoRef) (image
 func (m *mockTGClient) EditMessage(_ context.Context, _ store.Peer, _ int, _ string) error {
 	return nil
 }
+func (m *mockTGClient) DeleteChat(_ context.Context, _ store.Chat) error { return nil }
+
 func (m *mockTGClient) DeleteMessages(_ context.Context, _ store.Peer, _ []int, _ bool) error {
 	return nil
 }

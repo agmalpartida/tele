@@ -396,6 +396,17 @@ func (s *SQLiteStore) SetFolderFilters(filters []FolderFilter) {
 	}
 }
 
+func (s *SQLiteStore) RemoveChat(id int64) {
+	s.mu.Lock()
+	delete(s.chats, id)
+	delete(s.messages, id)
+	s.mu.Unlock()
+	_, err := s.db.Exec(`DELETE FROM chats WHERE id = ?`, id)
+	if err != nil {
+		s.log.Error("delete chat from sqlite failed", zap.Int64("chat_id", id), zap.Error(err))
+	}
+}
+
 // ClearForNewAccount clears all account-specific data when ownerID differs from the stored one.
 // If no owner is recorded yet (first launch with this version), it just records ownerID.
 func (s *SQLiteStore) ClearForNewAccount(ownerID int64) {

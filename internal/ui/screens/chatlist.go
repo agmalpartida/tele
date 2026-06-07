@@ -15,6 +15,10 @@ import (
 
 type OpenChatMsg struct{ Chat store.Chat }
 
+type DeleteChatRequest struct {
+	Chat store.Chat
+}
+
 var (
 	selectedChatStyle = lipgloss.NewStyle().Background(lipgloss.Color("63")).Foreground(lipgloss.Color("0"))
 	normalChatStyle   = lipgloss.NewStyle()
@@ -167,6 +171,11 @@ func (m *ChatListModel) Update(msg tea.Msg) (layout.Pane, tea.Cmd) {
 				m.activeIdx = m.cursor
 				chat := m.chats[m.cursor]
 				return m, func() tea.Msg { return OpenChatMsg{Chat: chat} }
+			}
+		case keys.ActionDeleteChat:
+			if len(m.chats) > 0 {
+				chat := m.chats[m.cursor]
+				return m, func() tea.Msg { return DeleteChatRequest{Chat: chat} }
 			}
 		}
 	}
